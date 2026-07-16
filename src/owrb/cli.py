@@ -315,10 +315,74 @@ def import_result(
 
 
 @app.command("evaluate")
-def evaluate_run_set() -> None:
-    """Evaluate a run set. Implementation target for Milestone 3."""
-    typer.echo("Evaluation is specified but not implemented yet.", err=True)
-    raise typer.Exit(code=2)
+def evaluate_run_set_command(
+    run_set: Path = typer.Option(..., "--run-set", help="Run-set directory"),
+    judge_adapter: str | None = typer.Option(
+        None, "--judge-adapter", help="Override judge adapter (anthropic or openai)"
+    ),
+    judge_model: str | None = typer.Option(None, "--judge-model", help="Override judge model"),
+    refresh_evidence: bool = typer.Option(
+        False, "--refresh-evidence", help="Refetch cited URLs instead of using the cache"
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON"),
+) -> None:
+    """Evaluate every trial in a run set (deterministic + evidence + judge)."""
+    import asyncio
+
+    from owrb.evaluation import EvaluationConfig, evaluate_run_set
+    from owrb.judge import JudgeConfig
+
+    config: EvaluationConfig | None = None
+    if judge_adapter or judge_model:
+        if not (judge_adapter and judge_model):
+            typer.echo("--judge-adapter and --judge-model must be used together", err=True)
+            raise typer.Exit(code=1)
+        config = EvaluationConfig(
+            judge=JudgeConfig(adapter=judge_adapter, model=judge_model)
+        )
+    try:
+        summary = asyncio.run(
+            evaluate_run_set(run_set, config=config, force_evidence_refresh=refresh_evidence)
+        )
+    except ValueError as error:
+        typer.echo(f"Evaluation failed: {error}", err=True)
+        raise typer.Exit(code=1) from error
+
+    if json_output:
+        typer.echo(json.dumps(summary, indent=2))
+    else:
+        for warning in summary["warnings"]:
+            typer.echo(f"warning: {warning}", err=True)
+        typer.echo(
+            f"Evaluated {summary['evaluated']} trials across "
+            f"{summary['scenarios']} scenarios (judge: {summary['judge']['adapter']})"
+        )
+    if summary["evaluated"] == 0:
+        raise typer.Exit(code=1)
+
+
+evidence_app = typer.Typer(help="Manage evaluator evidence for a run set")
+app.add_typer(evidence_app, name="evidence")
+
+
+@evidence_app.command("refresh")
+def refresh_evidence_command(
+    run_set: Path = typer.Option(..., "--run-set", help="Run-set directory"),
+) -> None:
+    """Refetch every cited URL in a run set, bypassing the evidence cache."""
+    import asyncio
+
+    from owrb.evaluation import evaluate_run_set
+
+    try:
+        summary = asyncio.run(evaluate_run_set(run_set, force_evidence_refresh=True))
+    except ValueError as error:
+        typer.echo(f"Refresh failed: {error}", err=True)
+        raise typer.Exit(code=1) from error
+    typer.echo(
+        f"Refreshed evidence and re-evaluated {summary['evaluated']} trials "
+        f"across {summary['scenarios']} scenarios"
+    )
 
 
 @app.command("compare")

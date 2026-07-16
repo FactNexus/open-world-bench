@@ -1,5 +1,65 @@
 {
   "$defs": {
+    "ClaimResult": {
+      "additionalProperties": false,
+      "description": "One material claim extracted from an answer and its evidence verdict.",
+      "properties": {
+        "citation_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Citation Ids",
+          "type": "array"
+        },
+        "claim_type": {
+          "default": "factual",
+          "enum": [
+            "factual",
+            "operational",
+            "recommendation",
+            "other"
+          ],
+          "title": "Claim Type",
+          "type": "string"
+        },
+        "explanation": {
+          "default": "",
+          "title": "Explanation",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "time_sensitive": {
+          "default": false,
+          "title": "Time Sensitive",
+          "type": "boolean"
+        },
+        "verdict": {
+          "enum": [
+            "supported",
+            "contradicted",
+            "not_addressed",
+            "no_citation",
+            "unverifiable"
+          ],
+          "title": "Verdict",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "text",
+        "verdict"
+      ],
+      "title": "ClaimResult",
+      "type": "object"
+    },
     "CriterionResult": {
       "additionalProperties": false,
       "properties": {
@@ -65,6 +125,20 @@
   },
   "additionalProperties": false,
   "properties": {
+    "citation_metrics": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Citation Metrics",
+      "type": "object"
+    },
+    "claims": {
+      "items": {
+        "$ref": "#/$defs/ClaimResult"
+      },
+      "title": "Claims",
+      "type": "array"
+    },
     "criteria": {
       "items": {
         "$ref": "#/$defs/CriterionResult"

@@ -30,9 +30,13 @@ Implemented so far (Milestones 0 and 1 of SPEC.md §26):
   concurrency limits, per-trial timeouts, and preserved failures/timeouts;
 - adapters: `generic_http`, `command`, `manual_import` (via `owrb import`), and
   provider adapters for Anthropic (Messages API) and OpenAI (Responses API) with
-  native web search and normalised citations/metrics/trace.
+  native web search and normalised citations/metrics/trace;
+- evidence and evaluation: SSRF-guarded, cached, polite evidence retrieval; a shared
+  per-scenario evidence bundle; deterministic checks; claim decomposition and
+  citation-support verdicts; blind rubric judging; dimension weighting with
+  hard-constraint capping; per-trial `evaluation.json` artefacts.
 
-Evaluation and comparison are the next implementation targets (Milestones 3–4).
+Comparison and reporting are the next implementation targets (Milestone 4).
 
 ## Core workflow
 
@@ -70,6 +74,8 @@ owrb systems validate systems/generic-http.example.yaml
 owrb schemas generate [--check]                   # regenerate/verify public JSON Schemas
 owrb run --suite suites/australian-tourism-dev.example.yaml
 owrb import --run-set runs/<id> --scenario <instance-id> --system <id> --answer answer.md
+owrb evaluate --run-set runs/<id> [--judge-adapter anthropic --judge-model <model>]
+owrb evidence refresh --run-set runs/<id>
 ```
 
 Generated instances are written to `runs/scenarios/<domain>-seed<seed>/` (override with
@@ -82,10 +88,17 @@ instances apart from the generation timestamp.
 `runs/<run-set-id>/<instance-id>/<system-id>/<trial-id>/`. Secrets are referenced by
 environment-variable name and never written to artefacts.
 
+`owrb evaluate` builds a shared evidence bundle per scenario (the union of every
+candidate's cited URLs, fetched once with SSRF protection, caching, and rate
+limits), runs deterministic checks, and — when a judge is configured via the suite's
+`evaluation.judge` or the `--judge-*` flags — decomposes claims, judges citation
+support against the retrieved evidence, and scores template criteria blind to the
+candidate's identity. Without a judge it still produces deterministic scores and
+marks results as requiring review.
+
 Implementation targets (exit with code 2 for now):
 
 ```bash
-owrb evaluate --run-set runs/2026-07-16-australian-tourism
 owrb compare --run-set runs/2026-07-16-australian-tourism
 owrb report --run-set runs/2026-07-16-australian-tourism
 ```

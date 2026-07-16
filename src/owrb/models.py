@@ -187,6 +187,37 @@ class RunResult(StrictModel):
     provider_metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+EvidenceStatus = Literal["reachable", "blocked", "paywalled", "unextractable", "missing", "invalid"]
+
+
+class EvidenceRecord(StrictModel):
+    """Evaluator-retrieved evidence metadata (SPEC.md 15.3); text is stored beside it."""
+
+    schema_version: int = 1
+    url: str
+    final_url: str | None = None
+    status: EvidenceStatus
+    http_status: int | None = None
+    content_type: str | None = None
+    content_hash: str | None = None
+    title: str | None = None
+    retrieved_at: datetime
+    text_length: int = 0
+    warning: str | None = None
+
+
+class ClaimResult(StrictModel):
+    """One material claim extracted from an answer and its evidence verdict."""
+
+    id: str
+    text: str
+    claim_type: Literal["factual", "operational", "recommendation", "other"] = "factual"
+    time_sensitive: bool = False
+    citation_ids: list[str] = Field(default_factory=list)
+    verdict: Literal["supported", "contradicted", "not_addressed", "no_citation", "unverifiable"]
+    explanation: str = ""
+
+
 class CriterionResult(StrictModel):
     criterion_id: str
     dimension: str
@@ -204,6 +235,8 @@ class EvaluationResult(StrictModel):
     evaluator_version: str
     judge_configuration: dict[str, Any] = Field(default_factory=dict)
     criteria: list[CriterionResult]
+    claims: list[ClaimResult] = Field(default_factory=list)
+    citation_metrics: dict[str, float] = Field(default_factory=dict)
     dimension_scores: dict[str, float]
     quality_score: float = Field(ge=0, le=100)
     hard_constraint_cap_applied: bool = False

@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from owrb.models import (
     DomainPack,
     EvaluationResult,
+    EvidenceRecord,
     RunResult,
     ScenarioInstance,
     ScenarioTemplate,
@@ -30,6 +31,7 @@ SCHEMA_EXPORTS: dict[str, type[BaseModel]] = {
     "suite.schema.json": SuiteConfig,
     "run-result.schema.json": RunResult,
     "evaluation-result.schema.json": EvaluationResult,
+    "evidence-record.schema.json": EvidenceRecord,
 }
 
 
