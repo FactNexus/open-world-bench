@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "DomainReference": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "path"
+      ],
+      "title": "DomainReference",
+      "type": "object"
+    },
+    "ScenarioGenerationConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "minimum": 1,
+          "title": "Count",
+          "type": "integer"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "template_quotas": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Template Quotas",
+          "type": "object"
+        }
+      },
+      "required": [
+        "seed",
+        "count"
+      ],
+      "title": "ScenarioGenerationConfig",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "concurrency": {
+      "default": 2,
+      "minimum": 1,
+      "title": "Concurrency",
+      "type": "integer"
+    },
+    "domain": {
+      "$ref": "#/$defs/DomainReference"
+    },
+    "evaluation": {
+      "additionalProperties": true,
+      "title": "Evaluation",
+      "type": "object"
+    },
+    "id": {
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "randomise_system_order": {
+      "default": true,
+      "title": "Randomise System Order",
+      "type": "boolean"
+    },
+    "repetitions": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Repetitions",
+      "type": "integer"
+    },
+    "reporting": {
+      "additionalProperties": true,
+      "title": "Reporting",
+      "type": "object"
+    },
+    "run_timeout_seconds": {
+      "default": 300,
+      "minimum": 1,
+      "title": "Run Timeout Seconds",
+      "type": "integer"
+    },
+    "scenario_generation": {
+      "$ref": "#/$defs/ScenarioGenerationConfig"
+    },
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "systems": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Systems",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "domain",
+    "scenario_generation",
+    "systems"
+  ],
+  "title": "SuiteConfig",
+  "type": "object"
+}

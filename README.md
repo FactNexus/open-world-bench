@@ -25,10 +25,14 @@ Implemented so far (Milestones 0 and 1 of SPEC.md §26):
 - JSON Schemas generated from the Pydantic contracts (`owrb schemas generate --check` in CI);
 - seeded, reproducible scenario generation with the no-code providers
   (`csv`, `yaml_list`, `values`, `range`, `date_window`, `derived`),
-  safe compatibility rules, rejection sampling, and duplicate detection.
+  safe compatibility rules, rejection sampling, and duplicate detection;
+- the async run harness: suite execution with per-instance randomised system order,
+  concurrency limits, per-trial timeouts, and preserved failures/timeouts;
+- adapters: `generic_http`, `command`, `manual_import` (via `owrb import`), and
+  provider adapters for Anthropic (Messages API) and OpenAI (Responses API) with
+  native web search and normalised citations/metrics/trace.
 
-Run execution (`owrb run`), evaluation, and comparison are the next implementation targets
-(Milestones 2–4).
+Evaluation and comparison are the next implementation targets (Milestones 3–4).
 
 ## Core workflow
 
@@ -64,6 +68,8 @@ owrb scenarios generate --domain australian-tourism --count 30 --seed 20260716
 owrb scenarios inspect <instance-id>              # show a generated instance
 owrb systems validate systems/generic-http.example.yaml
 owrb schemas generate [--check]                   # regenerate/verify public JSON Schemas
+owrb run --suite suites/australian-tourism-dev.example.yaml
+owrb import --run-set runs/<id> --scenario <instance-id> --system <id> --answer answer.md
 ```
 
 Generated instances are written to `runs/scenarios/<domain>-seed<seed>/` (override with
@@ -71,10 +77,14 @@ Generated instances are written to `runs/scenarios/<domain>-seed<seed>/` (overri
 rejections. Re-running with the same seed and pack version reproduces byte-identical
 instances apart from the generation timestamp.
 
+`owrb run` writes per-trial artefacts (`config.json`, `scenario.json`, `answer.md`,
+`citations.json`, `metrics.json`, `trace.jsonl`, `result.json`) under
+`runs/<run-set-id>/<instance-id>/<system-id>/<trial-id>/`. Secrets are referenced by
+environment-variable name and never written to artefacts.
+
 Implementation targets (exit with code 2 for now):
 
 ```bash
-owrb run --suite suites/australian-tourism-dev.yaml
 owrb evaluate --run-set runs/2026-07-16-australian-tourism
 owrb compare --run-set runs/2026-07-16-australian-tourism
 owrb report --run-set runs/2026-07-16-australian-tourism

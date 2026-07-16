@@ -18,6 +18,7 @@ from owrb.models import (
     RunResult,
     ScenarioInstance,
     ScenarioTemplate,
+    SuiteConfig,
     SystemDefinition,
 )
 
@@ -26,6 +27,7 @@ SCHEMA_EXPORTS: dict[str, type[BaseModel]] = {
     "scenario-template.schema.json": ScenarioTemplate,
     "scenario-instance.schema.json": ScenarioInstance,
     "system.schema.json": SystemDefinition,
+    "suite.schema.json": SuiteConfig,
     "run-result.schema.json": RunResult,
     "evaluation-result.schema.json": EvaluationResult,
 }

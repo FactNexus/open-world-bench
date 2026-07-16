@@ -220,6 +220,14 @@
       "title": "System Id",
       "type": "string"
     },
+    "trace": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Trace",
+      "type": "array"
+    },
     "trial_id": {
       "title": "Trial Id",
       "type": "string"

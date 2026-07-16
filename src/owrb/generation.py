@@ -180,6 +180,37 @@ def generate_scenario_instance(
     )
 
 
+def _template_schedule(
+    templates: list[ScenarioTemplate],
+    count: int,
+    template_quotas: dict[str, int] | None,
+) -> list[ScenarioTemplate]:
+    """Deterministic template order: quota-weighted round-robin, sorted by ID."""
+    ordered_templates = sorted(templates, key=lambda item: item.id)
+    if not template_quotas:
+        return [ordered_templates[index % len(ordered_templates)] for index in range(count)]
+
+    templates_by_id = {template.id: template for template in ordered_templates}
+    unknown = sorted(set(template_quotas) - set(templates_by_id))
+    if unknown:
+        raise GenerationError(f"template quotas reference unknown templates: {', '.join(unknown)}")
+    total = sum(template_quotas.values())
+    if total != count:
+        raise GenerationError(f"template quotas sum to {total} but count is {count}")
+
+    remaining = {
+        template_id: template_quotas.get(template_id, 0)
+        for template_id in sorted(templates_by_id)
+    }
+    schedule: list[ScenarioTemplate] = []
+    while len(schedule) < count:
+        for template_id, quota in remaining.items():
+            if quota > 0:
+                schedule.append(templates_by_id[template_id])
+                remaining[template_id] = quota - 1
+    return schedule
+
+
 def generate_batch(
     domain_pack: DomainPack,
     templates: list[ScenarioTemplate],
@@ -187,16 +218,17 @@ def generate_batch(
     suite_seed: int,
     count: int,
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+    template_quotas: dict[str, int] | None = None,
 ) -> tuple[list[ScenarioInstance], GenerationReport]:
     """Generate ``count`` instances, cycling templates in sorted-ID order."""
     if not templates:
         raise GenerationError("domain pack has no scenario templates")
-    ordered_templates = sorted(templates, key=lambda item: item.id)
+    schedule = _template_schedule(templates, count, template_quotas)
     report = GenerationReport(requested=count)
     seen_prompt_hashes: set[str] = set()
     instances: list[ScenarioInstance] = []
     for index in range(count):
-        template = ordered_templates[index % len(ordered_templates)]
+        template = schedule[index]
         instance = generate_scenario_instance(
             domain_pack=domain_pack,
             template=template,

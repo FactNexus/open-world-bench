@@ -8,6 +8,7 @@ import typer
 from owrb.domain_loader import load_domain_pack
 from owrb.generation import GenerationError, generate_batch, write_instances
 from owrb.providers.builtin import BuiltinProviderFactory
+from owrb.runner import SuiteError, execute_run_set, import_manual_result, load_suite
 from owrb.schema_export import check_schemas, write_schemas
 from owrb.validation import (
     ValidationIssue,
@@ -242,10 +243,75 @@ def generate_schemas(
 
 
 @app.command("run")
-def run_suite() -> None:
-    """Run a benchmark suite. Implementation target for Milestone 2."""
-    typer.echo("Suite execution is specified but not implemented yet.", err=True)
-    raise typer.Exit(code=2)
+def run_suite(
+    suite: Path = typer.Option(..., "--suite", help="Suite YAML (or a {suite: path} pointer)"),
+    run_set_id: str | None = typer.Option(
+        None, "--run-set-id", help="Run-set ID (default: <timestamp>-<suite-id>)"
+    ),
+    runs_directory: Path = typer.Option(
+        Path("runs"), "--runs-directory", help="Directory holding run sets"
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON"),
+) -> None:
+    """Generate scenarios and run every suite system against them."""
+    import asyncio
+    from datetime import UTC, datetime
+
+    try:
+        suite_config = load_suite(suite)
+        if run_set_id is None:
+            timestamp = datetime.now(tz=UTC).strftime("%Y%m%d-%H%M%S")
+            run_set_id = f"{timestamp}-{suite_config.id}"
+        run_set_directory = runs_directory / run_set_id
+        # References inside a suite resolve against the working directory first,
+        # then against the suite file's own directory.
+        summary = asyncio.run(
+            execute_run_set(suite_config, suite.resolve().parent, run_set_directory)
+        )
+    except SuiteError as error:
+        typer.echo(f"Run failed: {error}", err=True)
+        raise typer.Exit(code=1) from error
+
+    if json_output:
+        typer.echo(json.dumps(summary.as_dict(), indent=2))
+    else:
+        for warning in summary.warnings:
+            typer.echo(f"warning: {warning}", err=True)
+        typer.echo(
+            f"Run set {run_set_id}: {summary.scenario_count} scenarios; "
+            f"{summary.completed} completed, {summary.failed} failed, "
+            f"{summary.timed_out} timed out"
+        )
+        typer.echo(f"Artefacts in {summary.run_set_directory}")
+    if summary.completed == 0:
+        raise typer.Exit(code=1)
+
+
+@app.command("import")
+def import_result(
+    run_set: Path = typer.Option(..., "--run-set", help="Run-set directory"),
+    scenario: str = typer.Option(..., "--scenario", help="Scenario instance ID"),
+    system: str = typer.Option(..., "--system", help="System ID for the imported result"),
+    answer: Path = typer.Option(..., "--answer", help="Markdown answer file"),
+    citations: Path | None = typer.Option(None, "--citations", help="citations.json file"),
+    latency_ms: int | None = typer.Option(
+        None, "--latency-ms", help="Manually observed latency in milliseconds"
+    ),
+) -> None:
+    """Import a manually captured answer as a 'manual' trial (SPEC.md 13.5)."""
+    try:
+        trial_directory = import_manual_result(
+            run_set_directory=run_set,
+            scenario_id=scenario,
+            system_id=system,
+            answer_path=answer,
+            citations_path=citations,
+            latency_ms=latency_ms,
+        )
+    except SuiteError as error:
+        typer.echo(f"Import failed: {error}", err=True)
+        raise typer.Exit(code=1) from error
+    typer.echo(f"Imported manual result to {trial_directory}")
 
 
 @app.command("evaluate")

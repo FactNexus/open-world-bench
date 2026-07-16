@@ -117,6 +117,40 @@ class SystemDefinition(StrictModel):
     environment: dict[str, str] = Field(default_factory=dict)
 
 
+class DomainReference(StrictModel):
+    id: str
+    path: str
+
+
+class ScenarioGenerationConfig(StrictModel):
+    seed: int
+    count: int = Field(ge=1)
+    template_quotas: dict[str, int] = Field(default_factory=dict)
+
+
+class SuiteConfig(StrictModel):
+    schema_version: int = 1
+    id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]*$")
+    name: str
+    domain: DomainReference
+    scenario_generation: ScenarioGenerationConfig
+    systems: list[str]
+    repetitions: int = Field(default=1, ge=1)
+    randomise_system_order: bool = True
+    concurrency: int = Field(default=2, ge=1)
+    run_timeout_seconds: int = Field(default=300, ge=1)
+    evaluation: dict[str, Any] = Field(default_factory=dict)
+    reporting: dict[str, Any] = Field(default_factory=dict)
+
+
+class RunRequest(StrictModel):
+    scenario: ScenarioInstance
+    system: SystemDefinition
+    trial_id: str
+    input_text: str
+    timeout_seconds: int
+
+
 class Citation(StrictModel):
     id: str
     url: str
@@ -148,6 +182,7 @@ class RunResult(StrictModel):
     answer: str
     citations: list[Citation] = Field(default_factory=list)
     metrics: RunMetrics = Field(default_factory=RunMetrics)
+    trace: list[dict[str, Any]] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     provider_metadata: dict[str, Any] = Field(default_factory=dict)
 
