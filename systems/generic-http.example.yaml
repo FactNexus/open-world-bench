@@ -1,0 +1,26 @@
+schema_version: 1
+id: custom-tourism-agent
+name: Custom tourism agent
+adapter: generic_http
+provider: internal
+model: unspecified
+capabilities:
+  web_search: false
+  browser: false
+  domain_index: true
+  ontology: true
+  mcp: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  endpoint: ${CUSTOM_AGENT_ENDPOINT}
+  method: POST
+  timeout_seconds: 300
+  response_mapping:
+    answer: $.answer
+    citations: $.citations
+    metrics: $.metrics
+environment:
+  api_key: CUSTOM_AGENT_API_KEY

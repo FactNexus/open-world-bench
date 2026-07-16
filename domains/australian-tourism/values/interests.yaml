@@ -1,0 +1,16 @@
+- id: wildlife
+  label: wildlife and nature
+- id: food-wine
+  label: local food and wine
+- id: history
+  label: local history and heritage
+- id: arts
+  label: arts and culture
+- id: family
+  label: family-friendly attractions
+- id: walks
+  label: short scenic walks
+- id: coast
+  label: coastal scenery and beaches
+- id: indigenous-culture
+  label: Aboriginal and Torres Strait Islander cultural experiences

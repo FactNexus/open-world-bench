@@ -1,0 +1,12 @@
+- id: low-walking
+  description: avoid activities requiring more than 2 kilometres of walking
+- id: no-car
+  description: recommendations must be practical without a private car
+- id: indoor-backup
+  description: include an indoor alternative in case of poor weather
+- id: wheelchair
+  description: use only options with explicit evidence of wheelchair accessibility
+- id: modest-budget
+  description: prioritise free or modestly priced activities
+- id: weekend
+  description: assume the visit occurs on a weekend and verify operating information

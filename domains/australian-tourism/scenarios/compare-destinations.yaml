@@ -1,0 +1,53 @@
+schema_version: 1
+id: compare-destinations
+name: Compare two destinations
+version: 0.1.0
+description: Compare two generated Australian destinations for a traveller profile.
+prompt: |
+  Compare {{ location_a.name }}, {{ location_a.state_or_territory }}, and
+  {{ location_b.name }}, {{ location_b.state_or_territory }}, for
+  {{ traveller.description }} whose main interest is {{ interest.label }}.
+
+  Recommend one destination and explain the trade-offs. Apply this additional
+  requirement: {{ constraint.description }}. Support material factual claims with
+  current citations, especially claims about access, transport, operating conditions,
+  and suitability. State uncertainty where the evidence is incomplete.
+parameters:
+  location_a:
+    source: location
+  location_b:
+    source: location
+  traveller:
+    source: traveller
+  interest:
+    source: interest
+  constraint:
+    source: constraint
+rules:
+  - "location_a.id != location_b.id"
+criteria:
+  - id: genuine-comparison
+    dimension: coverage
+    title: Compares both destinations using relevant factors
+    description: The answer should discuss strengths and limitations of both destinations.
+  - id: recommendation
+    dimension: coverage
+    title: Makes and justifies a clear recommendation
+    description: The selected destination should follow from the traveller profile, interest, and constraint.
+  - id: balanced-evidence
+    dimension: citation_support
+    title: Evidence is provided for both destinations
+    description: Material factual claims about each destination should have suitable supporting sources.
+  - id: constraint
+    dimension: constraint_satisfaction
+    title: Applies the additional requirement
+    description: The comparison and recommendation should explicitly account for the stated requirement.
+    hard: true
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Use comparable factors for both destinations.
+    - End with a clear recommendation.
+tags: [comparison, destination-selection]
+difficulty: medium

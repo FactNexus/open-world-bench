@@ -1,0 +1,18 @@
+# Run artefacts (SPEC.md §8 — gitignored by design)
+runs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+
+# Local secrets (SPEC.md §20)
+.env
+
+# Packaged snapshot of this repo
+open-world-research-benchmark.tar.gz

@@ -1,0 +1,60 @@
+schema_version: 1
+id: nearby-discovery
+name: Nearby experience discovery
+version: 0.1.0
+description: Find a small set of suitable experiences around a generated Australian location.
+prompt: |
+  {{ traveller.description | capitalize }} is staying in {{ location.name }},
+  {{ location.state_or_territory }}. Recommend {{ recommendation_count }} experiences
+  connected with {{ interest.label }} within approximately {{ max_distance_km }} km.
+
+  Additional requirement: {{ constraint.description }}.
+
+  Explain briefly why each option fits. Verify any operating, access, price, booking,
+  transport, or accessibility claims using current sources. Place citations close to
+  the claims they support and identify any important uncertainty.
+parameters:
+  location:
+    source: location
+  traveller:
+    source: traveller
+  interest:
+    source: interest
+  constraint:
+    source: constraint
+  recommendation_count:
+    provider:
+      type: values
+      values: [3, 4, 5]
+  max_distance_km:
+    provider:
+      type: values
+      values: [25, 50, 100]
+criteria:
+  - id: requested-count
+    dimension: constraint_satisfaction
+    title: Provides the requested number of recommendations
+    description: The answer should provide exactly the requested number, excluding clearly labelled backups.
+    hard: false
+  - id: radius
+    dimension: constraint_satisfaction
+    title: Recommendations are within the stated radius
+    description: Options should be within the approximate maximum distance or clearly identify and justify an exception.
+    hard: true
+    validator: geo.radius
+  - id: traveller-fit
+    dimension: coverage
+    title: Recommendations fit the traveller and additional requirement
+    description: Each recommendation should address the stated traveller profile and constraint.
+  - id: evidence
+    dimension: citation_support
+    title: Material claims are supported by suitable current citations
+    description: Operational and suitability claims should be supported by sources appropriate to those claims.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Give a direct answer rather than describing a research process.
+    - Use citations close to the claims they support.
+tags: [discovery, local, recommendations]
+difficulty: medium

@@ -1,0 +1,21 @@
+schema_version: 1
+principles:
+  - Match source authority to the claim rather than applying a universal domain ranking.
+  - Prefer current primary sources for operational, safety, access, price, and schedule claims.
+  - Use tourism bodies for discovery and regional context.
+  - Use operator sites for their own opening hours, booking rules, prices, and accessibility details.
+  - Use parks agencies and government authorities for closures, permits, track conditions, and regulations.
+  - User-generated sources may support subjective character but should not be the sole support for critical facts.
+source_classes:
+  government_authority:
+    default_score: 1.0
+  official_tourism_body:
+    default_score: 0.9
+  attraction_or_accommodation_operator:
+    default_score: 0.9
+  transport_operator:
+    default_score: 0.9
+  established_editorial_guide:
+    default_score: 0.7
+  user_generated:
+    default_score: 0.4

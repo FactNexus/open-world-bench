@@ -1,0 +1,10 @@
+schema_version: 1
+id: manual-product-result
+name: Manually captured hosted-product result
+adapter: manual_import
+capabilities:
+  web_search: true
+  citations: true
+settings:
+  product_name: replace-me
+  capture_instructions: Preserve the answer and source links exactly as shown.

@@ -1,0 +1,144 @@
+{
+  "$defs": {
+    "CriterionResult": {
+      "additionalProperties": false,
+      "properties": {
+        "criterion_id": {
+          "title": "Criterion Id",
+          "type": "string"
+        },
+        "dimension": {
+          "title": "Dimension",
+          "type": "string"
+        },
+        "score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Score",
+          "type": "number"
+        },
+        "passed": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Passed"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "hard_failure": {
+          "default": false,
+          "title": "Hard Failure",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "criterion_id",
+        "dimension",
+        "score",
+        "explanation"
+      ],
+      "title": "CriterionResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "run_id": {
+      "title": "Run Id",
+      "type": "string"
+    },
+    "evaluated_at": {
+      "format": "date-time",
+      "title": "Evaluated At",
+      "type": "string"
+    },
+    "evaluator_version": {
+      "title": "Evaluator Version",
+      "type": "string"
+    },
+    "judge_configuration": {
+      "additionalProperties": true,
+      "title": "Judge Configuration",
+      "type": "object"
+    },
+    "criteria": {
+      "items": {
+        "$ref": "#/$defs/CriterionResult"
+      },
+      "title": "Criteria",
+      "type": "array"
+    },
+    "dimension_scores": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Dimension Scores",
+      "type": "object"
+    },
+    "quality_score": {
+      "maximum": 100,
+      "minimum": 0,
+      "title": "Quality Score",
+      "type": "number"
+    },
+    "hard_constraint_cap_applied": {
+      "default": false,
+      "title": "Hard Constraint Cap Applied",
+      "type": "boolean"
+    },
+    "review_status": {
+      "default": "not_required",
+      "enum": [
+        "not_required",
+        "required",
+        "reviewed"
+      ],
+      "title": "Review Status",
+      "type": "string"
+    },
+    "warnings": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Warnings",
+      "type": "array"
+    }
+  },
+  "required": [
+    "run_id",
+    "evaluated_at",
+    "evaluator_version",
+    "criteria",
+    "dimension_scores",
+    "quality_score"
+  ],
+  "title": "EvaluationResult",
+  "type": "object"
+}

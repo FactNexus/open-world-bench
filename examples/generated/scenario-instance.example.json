@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "id": "australian-tourism.nearby-discovery.000001",
+  "domain_id": "australian-tourism",
+  "domain_version": "0.1.0",
+  "template_id": "nearby-discovery",
+  "template_version": "0.1.0",
+  "seed": 202607160001,
+  "generated_at": "2026-07-16T07:00:00Z",
+  "parameters": {
+    "location": {
+      "id": "mudgee",
+      "name": "Mudgee",
+      "state_or_territory": "NSW",
+      "latitude": -32.5893,
+      "longitude": 149.5886
+    },
+    "traveller": {
+      "id": "active-retirees",
+      "description": "active retirees who prefer moderate rather than strenuous walking"
+    },
+    "interest": {
+      "id": "food-wine",
+      "label": "local food and wine"
+    },
+    "constraint": {
+      "id": "low-walking",
+      "description": "avoid activities requiring more than 2 kilometres of walking"
+    },
+    "recommendation_count": 4,
+    "max_distance_km": 50
+  },
+  "prompt": "Active retirees who prefer moderate rather than strenuous walking are staying in Mudgee, NSW. Recommend 4 experiences connected with local food and wine within approximately 50 km. Additional requirement: avoid activities requiring more than 2 kilometres of walking. Explain briefly why each option fits. Verify any operating, access, price, booking, transport, or accessibility claims using current sources. Place citations close to the claims they support and identify any important uncertainty.",
+  "answer_contract": {
+    "format": "markdown",
+    "citations_required": true,
+    "instructions": [
+      "Give a direct answer rather than describing a research process.",
+      "Use citations close to the claims they support."
+    ]
+  },
+  "criteria": [],
+  "source_hashes": {
+    "domain.yaml": "example",
+    "locations.csv": "example"
+  },
+  "tags": ["discovery", "local", "recommendations"]
+}

@@ -1,0 +1,21 @@
+id,name,state_or_territory,latitude,longitude,location_type,sampling_weight
+sydney,Sydney,NSW,-33.8688,151.2093,city,1
+katoomba,Katoomba,NSW,-33.7125,150.3119,town,1
+mudgee,Mudgee,NSW,-32.5893,149.5886,town,1
+byron-bay,Byron Bay,NSW,-28.6474,153.6020,town,1
+port-macquarie,Port Macquarie,NSW,-31.4333,152.9000,city,1
+melbourne,Melbourne,VIC,-37.8136,144.9631,city,1
+bright,Bright,VIC,-36.7270,146.9600,town,1
+hobart,Hobart,TAS,-42.8821,147.3272,city,1
+launceston,Launceston,TAS,-41.4332,147.1441,city,1
+adelaide,Adelaide,SA,-34.9285,138.6007,city,1
+barossa-valley,Barossa Valley,SA,-34.5333,138.9500,region,1
+perth,Perth,WA,-31.9523,115.8613,city,1
+margaret-river,Margaret River,WA,-33.9530,115.0730,region,1
+broome,Broome,WA,-17.9614,122.2359,town,1
+darwin,Darwin,NT,-12.4634,130.8456,city,1
+alice-springs,Alice Springs,NT,-23.6980,133.8807,town,1
+brisbane,Brisbane,QLD,-27.4698,153.0251,city,1
+cairns,Cairns,QLD,-16.9186,145.7781,city,1
+longreach,Longreach,QLD,-23.4422,144.2491,town,1
+canberra,Canberra,ACT,-35.2809,149.1300,city,1

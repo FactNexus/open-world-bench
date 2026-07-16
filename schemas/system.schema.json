@@ -1,0 +1,123 @@
+{
+  "$defs": {
+    "SystemCapabilities": {
+      "additionalProperties": false,
+      "properties": {
+        "web_search": {
+          "default": false,
+          "title": "Web Search",
+          "type": "boolean"
+        },
+        "browser": {
+          "default": false,
+          "title": "Browser",
+          "type": "boolean"
+        },
+        "domain_index": {
+          "default": false,
+          "title": "Domain Index",
+          "type": "boolean"
+        },
+        "ontology": {
+          "default": false,
+          "title": "Ontology",
+          "type": "boolean"
+        },
+        "mcp": {
+          "default": false,
+          "title": "Mcp",
+          "type": "boolean"
+        },
+        "citations": {
+          "default": true,
+          "title": "Citations",
+          "type": "boolean"
+        },
+        "trace": {
+          "default": false,
+          "title": "Trace",
+          "type": "boolean"
+        },
+        "token_metrics": {
+          "default": false,
+          "title": "Token Metrics",
+          "type": "boolean"
+        },
+        "cost_metrics": {
+          "default": false,
+          "title": "Cost Metrics",
+          "type": "boolean"
+        }
+      },
+      "title": "SystemCapabilities",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "id": {
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "adapter": {
+      "title": "Adapter",
+      "type": "string"
+    },
+    "provider": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Provider"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/SystemCapabilities"
+    },
+    "settings": {
+      "additionalProperties": true,
+      "title": "Settings",
+      "type": "object"
+    },
+    "environment": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Environment",
+      "type": "object"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "adapter"
+  ],
+  "title": "SystemDefinition",
+  "type": "object"
+}

@@ -1,0 +1,57 @@
+[project]
+name = "owrb"
+version = "0.1.0"
+description = "Domain-parameterised open-world research agent benchmark"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "OWRB contributors" }]
+dependencies = [
+  "jinja2>=3.1.4",
+  "orjson>=3.10.0",
+  "pydantic>=2.8.0",
+  "pyyaml>=6.0.2",
+  "typer>=0.12.0",
+]
+
+[project.optional-dependencies]
+http = [
+  "httpx>=0.27.0",
+  "tenacity>=9.0.0",
+  "tldextract>=5.1.0",
+]
+report = [
+  "jinja2>=3.1.4",
+]
+dev = [
+  "mypy>=1.11.0",
+  "pytest>=8.3.0",
+  "ruff>=0.6.0",
+  "types-PyYAML>=6.0.12",
+]
+
+[project.scripts]
+owrb = "owrb.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/owrb"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["owrb"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

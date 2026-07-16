@@ -1,0 +1,54 @@
+schema_version: 1
+id: constrained-day-plan
+name: Constrained one-day plan
+version: 0.1.0
+description: Build a practical day plan around a generated location and traveller profile.
+prompt: |
+  Create a one-day visitor plan based in {{ location.name }},
+  {{ location.state_or_territory }}, for {{ traveller.description }}.
+  The main interest is {{ interest.label }}. The plan should include
+  {{ activity_count }} principal stops and satisfy this requirement:
+  {{ constraint.description }}.
+
+  Keep travel practical and avoid an overfilled schedule. Verify current opening,
+  booking, access, price, and transport details where they affect feasibility.
+  Cite the supporting sources close to the relevant statements and state uncertainty.
+parameters:
+  location:
+    source: location
+  traveller:
+    source: traveller
+  interest:
+    source: interest
+  constraint:
+    source: constraint
+  activity_count:
+    provider:
+      type: values
+      values: [2, 3, 4]
+criteria:
+  - id: feasible-sequence
+    dimension: constraint_satisfaction
+    title: The day is practical and geographically coherent
+    description: The proposed order and travel demands should fit within one day.
+    hard: true
+  - id: requested-stops
+    dimension: constraint_satisfaction
+    title: Includes the requested number of principal stops
+    description: The plan should include the requested number of main activities.
+  - id: traveller-and-interest
+    dimension: coverage
+    title: Fits the traveller and main interest
+    description: The plan should visibly respond to both the traveller profile and interest.
+  - id: operational-evidence
+    dimension: citation_support
+    title: Feasibility claims have current evidence
+    description: Time-sensitive details that affect the plan should be supported by suitable sources.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Present the plan in chronological order.
+    - Distinguish confirmed details from estimates.
+tags: [planning, itinerary, one-day]
+difficulty: hard

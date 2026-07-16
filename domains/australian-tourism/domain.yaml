@@ -1,0 +1,38 @@
+schema_version: 1
+id: australian-tourism
+name: Australian tourism
+description: >
+  Open-world research and recommendation scenarios concerning travel and tourism
+  within Australia.
+version: 0.1.0
+default_locale: en-AU
+default_timezone: Australia/Sydney
+templates:
+  - scenarios/*.yaml
+parameters:
+  location:
+    description: Australian city, town, or tourism region used as a scenario base.
+    provider:
+      type: csv
+      path: values/locations.csv
+      options:
+        id_field: id
+        weight_field: sampling_weight
+  traveller:
+    provider:
+      type: yaml_list
+      path: values/travellers.yaml
+  interest:
+    provider:
+      type: yaml_list
+      path: values/interests.yaml
+  constraint:
+    provider:
+      type: yaml_list
+      path: values/constraints.yaml
+source_policy: source-policy.yaml
+licence: MIT for authored templates; source datasets retain their own licences
+attribution: []
+metadata:
+  maturity: scaffold
+  intended_public_release: false

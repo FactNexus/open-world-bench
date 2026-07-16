@@ -1,0 +1,37 @@
+schema_version: 1
+id: australian-tourism-dev
+name: Australian tourism development suite
+domain:
+  id: australian-tourism
+  path: domains/australian-tourism
+scenario_generation:
+  seed: 20260716
+  count: 30
+  template_quotas:
+    nearby-discovery: 10
+    constrained-day-plan: 10
+    compare-destinations: 10
+systems:
+  - systems/generic-http.example.yaml
+  - systems/provider-search.example.yaml
+repetitions: 3
+randomise_system_order: true
+concurrency: 2
+run_timeout_seconds: 300
+evaluation:
+  quality_weights:
+    constraint_satisfaction: 25
+    citation_support: 25
+    factual_correctness: 20
+    coverage: 15
+    source_quality_freshness: 10
+    clarity: 5
+  hard_constraint_score_cap: 49
+  evidence_cache: true
+  judge:
+    adapter: configurable
+    model: replace-me
+reporting:
+  static_html: true
+  export_json: true
+  export_csv: true

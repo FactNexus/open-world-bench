@@ -1,0 +1,22 @@
+schema_version: 1
+id: provider-web-search
+name: Provider model with native web search
+adapter: provider_specific
+provider: replace-me
+model: replace-me
+capabilities:
+  web_search: true
+  browser: false
+  domain_index: false
+  ontology: false
+  mcp: false
+  citations: true
+  trace: false
+  token_metrics: true
+  cost_metrics: true
+settings:
+  search_enabled: true
+  temperature: 0
+  timeout_seconds: 300
+environment:
+  api_key: PROVIDER_API_KEY

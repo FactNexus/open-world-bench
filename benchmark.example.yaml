@@ -1,0 +1,2 @@
+# Convenience pointer to a suite. The run command should also accept the suite directly.
+suite: suites/australian-tourism-dev.example.yaml

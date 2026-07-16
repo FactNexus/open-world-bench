@@ -1,0 +1,21 @@
+- id: couple-food
+  description: a couple who value good food and relaxed experiences
+  party_size: 2
+  children: 0
+- id: young-family
+  description: a family with two primary-school-aged children
+  party_size: 4
+  children: 2
+- id: active-retirees
+  description: active retirees who prefer moderate rather than strenuous walking
+  party_size: 2
+  children: 0
+- id: solo-no-car
+  description: a solo traveller without access to a private car
+  party_size: 1
+  children: 0
+- id: wheelchair-user
+  description: two adults, one of whom uses a wheelchair
+  party_size: 2
+  children: 0
+  requires_wheelchair_access: true
