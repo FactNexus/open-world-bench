@@ -16,9 +16,19 @@ Unlike closed-corpus benchmarks, OWRB does not give every system the same docume
 
 ## Status
 
-This repository is an implementation specification and starter scaffold. It is intended to be handed to a coding agent or development team.
-
 The normative requirements are in [SPEC.md](SPEC.md). Supporting design notes are in [`docs/`](docs/).
+
+Implemented so far (Milestones 0 and 1 of SPEC.md §26):
+
+- deep domain-pack validation (manifest, templates, providers, prompts, rules);
+- system-definition validation;
+- JSON Schemas generated from the Pydantic contracts (`owrb schemas generate --check` in CI);
+- seeded, reproducible scenario generation with the no-code providers
+  (`csv`, `yaml_list`, `values`, `range`, `date_window`, `derived`),
+  safe compatibility rules, rejection sampling, and duplicate detection.
+
+Run execution (`owrb run`), evaluation, and comparison are the next implementation targets
+(Milestones 2–4).
 
 ## Core workflow
 
@@ -41,20 +51,34 @@ Evidence retrieval and mixed evaluation
 Quality report + efficiency report + paired comparison
 ```
 
-## Proposed command-line interface
+## Command-line interface
+
+Working today:
 
 ```bash
-uv sync
+uv sync --all-extras
 
-owrb domain validate domains/australian-tourism
+owrb domain validate domains/australian-tourism   # deep validation, --json supported
+owrb domain list                                  # list packs under domains/
 owrb scenarios generate --domain australian-tourism --count 30 --seed 20260716
+owrb scenarios inspect <instance-id>              # show a generated instance
+owrb systems validate systems/generic-http.example.yaml
+owrb schemas generate [--check]                   # regenerate/verify public JSON Schemas
+```
+
+Generated instances are written to `runs/scenarios/<domain>-seed<seed>/` (override with
+`--output`), together with a `generation-report.json` covering rule and duplicate
+rejections. Re-running with the same seed and pack version reproduces byte-identical
+instances apart from the generation timestamp.
+
+Implementation targets (exit with code 2 for now):
+
+```bash
 owrb run --suite suites/australian-tourism-dev.yaml
 owrb evaluate --run-set runs/2026-07-16-australian-tourism
 owrb compare --run-set runs/2026-07-16-australian-tourism
 owrb report --run-set runs/2026-07-16-australian-tourism
 ```
-
-Only domain validation is expected to work in the initial scaffold. The remaining commands are implementation targets.
 
 ## Minimal domain pack
 

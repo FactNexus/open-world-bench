@@ -3,29 +3,9 @@
     "SystemCapabilities": {
       "additionalProperties": false,
       "properties": {
-        "web_search": {
-          "default": false,
-          "title": "Web Search",
-          "type": "boolean"
-        },
         "browser": {
           "default": false,
           "title": "Browser",
-          "type": "boolean"
-        },
-        "domain_index": {
-          "default": false,
-          "title": "Domain Index",
-          "type": "boolean"
-        },
-        "ontology": {
-          "default": false,
-          "title": "Ontology",
-          "type": "boolean"
-        },
-        "mcp": {
-          "default": false,
-          "title": "Mcp",
           "type": "boolean"
         },
         "citations": {
@@ -33,9 +13,24 @@
           "title": "Citations",
           "type": "boolean"
         },
-        "trace": {
+        "cost_metrics": {
           "default": false,
-          "title": "Trace",
+          "title": "Cost Metrics",
+          "type": "boolean"
+        },
+        "domain_index": {
+          "default": false,
+          "title": "Domain Index",
+          "type": "boolean"
+        },
+        "mcp": {
+          "default": false,
+          "title": "Mcp",
+          "type": "boolean"
+        },
+        "ontology": {
+          "default": false,
+          "title": "Ontology",
           "type": "boolean"
         },
         "token_metrics": {
@@ -43,9 +38,14 @@
           "title": "Token Metrics",
           "type": "boolean"
         },
-        "cost_metrics": {
+        "trace": {
           "default": false,
-          "title": "Cost Metrics",
+          "title": "Trace",
+          "type": "boolean"
+        },
+        "web_search": {
+          "default": false,
+          "title": "Web Search",
           "type": "boolean"
         }
       },
@@ -55,22 +55,39 @@
   },
   "additionalProperties": false,
   "properties": {
-    "schema_version": {
-      "default": 1,
-      "title": "Schema Version",
-      "type": "integer"
+    "adapter": {
+      "title": "Adapter",
+      "type": "string"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/SystemCapabilities"
+    },
+    "environment": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "title": "Environment",
+      "type": "object"
     },
     "id": {
       "pattern": "^[a-z0-9][a-z0-9-]*$",
       "title": "Id",
       "type": "string"
     },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
     "name": {
       "title": "Name",
-      "type": "string"
-    },
-    "adapter": {
-      "title": "Adapter",
       "type": "string"
     },
     "provider": {
@@ -85,31 +102,14 @@
       "default": null,
       "title": "Provider"
     },
-    "model": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Model"
-    },
-    "capabilities": {
-      "$ref": "#/$defs/SystemCapabilities"
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
     },
     "settings": {
       "additionalProperties": true,
       "title": "Settings",
-      "type": "object"
-    },
-    "environment": {
-      "additionalProperties": {
-        "type": "string"
-      },
-      "title": "Environment",
       "type": "object"
     }
   },

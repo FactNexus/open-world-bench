@@ -3,6 +3,11 @@
     "AnswerContract": {
       "additionalProperties": false,
       "properties": {
+        "citations_required": {
+          "default": true,
+          "title": "Citations Required",
+          "type": "boolean"
+        },
         "format": {
           "default": "markdown",
           "enum": [
@@ -12,11 +17,6 @@
           ],
           "title": "Format",
           "type": "string"
-        },
-        "citations_required": {
-          "default": true,
-          "title": "Citations Required",
-          "type": "boolean"
         },
         "instructions": {
           "items": {
@@ -32,20 +32,12 @@
     "CriterionSpec": {
       "additionalProperties": false,
       "properties": {
-        "id": {
-          "title": "Id",
+        "description": {
+          "title": "Description",
           "type": "string"
         },
         "dimension": {
           "title": "Dimension",
-          "type": "string"
-        },
-        "title": {
-          "title": "Title",
-          "type": "string"
-        },
-        "description": {
-          "title": "Description",
           "type": "string"
         },
         "hard": {
@@ -53,11 +45,13 @@
           "title": "Hard",
           "type": "boolean"
         },
-        "weight": {
-          "default": 1.0,
-          "exclusiveMinimum": 0,
-          "title": "Weight",
-          "type": "number"
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
         },
         "validator": {
           "anyOf": [
@@ -70,6 +64,12 @@
           ],
           "default": null,
           "title": "Validator"
+        },
+        "weight": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "title": "Weight",
+          "type": "number"
         }
       },
       "required": [
@@ -84,14 +84,15 @@
   },
   "additionalProperties": false,
   "properties": {
-    "schema_version": {
-      "default": 1,
-      "title": "Schema Version",
-      "type": "integer"
+    "answer_contract": {
+      "$ref": "#/$defs/AnswerContract"
     },
-    "id": {
-      "title": "Id",
-      "type": "string"
+    "criteria": {
+      "items": {
+        "$ref": "#/$defs/CriterionSpec"
+      },
+      "title": "Criteria",
+      "type": "array"
     },
     "domain_id": {
       "title": "Domain Id",
@@ -101,21 +102,13 @@
       "title": "Domain Version",
       "type": "string"
     },
-    "template_id": {
-      "title": "Template Id",
-      "type": "string"
-    },
-    "template_version": {
-      "title": "Template Version",
-      "type": "string"
-    },
-    "seed": {
-      "title": "Seed",
-      "type": "integer"
-    },
     "generated_at": {
       "format": "date-time",
       "title": "Generated At",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
       "type": "string"
     },
     "parameters": {
@@ -127,15 +120,14 @@
       "title": "Prompt",
       "type": "string"
     },
-    "answer_contract": {
-      "$ref": "#/$defs/AnswerContract"
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
     },
-    "criteria": {
-      "items": {
-        "$ref": "#/$defs/CriterionSpec"
-      },
-      "title": "Criteria",
-      "type": "array"
+    "seed": {
+      "title": "Seed",
+      "type": "integer"
     },
     "source_hashes": {
       "additionalProperties": {
@@ -150,6 +142,14 @@
       },
       "title": "Tags",
       "type": "array"
+    },
+    "template_id": {
+      "title": "Template Id",
+      "type": "string"
+    },
+    "template_version": {
+      "title": "Template Version",
+      "type": "string"
     }
   },
   "required": [

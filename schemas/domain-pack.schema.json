@@ -3,9 +3,6 @@
     "DomainParameterSpec": {
       "additionalProperties": false,
       "properties": {
-        "provider": {
-          "$ref": "#/$defs/ProviderSpec"
-        },
         "description": {
           "anyOf": [
             {
@@ -17,6 +14,9 @@
           ],
           "default": null,
           "title": "Description"
+        },
+        "provider": {
+          "$ref": "#/$defs/ProviderSpec"
         }
       },
       "required": [
@@ -28,9 +28,10 @@
     "ProviderSpec": {
       "additionalProperties": false,
       "properties": {
-        "type": {
-          "title": "Type",
-          "type": "string"
+        "options": {
+          "additionalProperties": true,
+          "title": "Options",
+          "type": "object"
         },
         "path": {
           "anyOf": [
@@ -44,6 +45,10 @@
           "default": null,
           "title": "Path"
         },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
         "values": {
           "anyOf": [
             {
@@ -56,11 +61,6 @@
           ],
           "default": null,
           "title": "Values"
-        },
-        "options": {
-          "additionalProperties": true,
-          "title": "Options",
-          "type": "object"
         }
       },
       "required": [
@@ -72,27 +72,12 @@
   },
   "additionalProperties": false,
   "properties": {
-    "schema_version": {
-      "default": 1,
-      "title": "Schema Version",
-      "type": "integer"
-    },
-    "id": {
-      "pattern": "^[a-z0-9][a-z0-9-]*$",
-      "title": "Id",
-      "type": "string"
-    },
-    "name": {
-      "title": "Name",
-      "type": "string"
-    },
-    "description": {
-      "title": "Description",
-      "type": "string"
-    },
-    "version": {
-      "title": "Version",
-      "type": "string"
+    "attribution": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Attribution",
+      "type": "array"
     },
     "default_locale": {
       "default": "en-AU",
@@ -104,31 +89,14 @@
       "title": "Default Timezone",
       "type": "string"
     },
-    "templates": {
-      "items": {
-        "type": "string"
-      },
-      "title": "Templates",
-      "type": "array"
+    "description": {
+      "title": "Description",
+      "type": "string"
     },
-    "parameters": {
-      "additionalProperties": {
-        "$ref": "#/$defs/DomainParameterSpec"
-      },
-      "title": "Parameters",
-      "type": "object"
-    },
-    "source_policy": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Source Policy"
+    "id": {
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "title": "Id",
+      "type": "string"
     },
     "licence": {
       "anyOf": [
@@ -142,17 +110,49 @@
       "default": null,
       "title": "Licence"
     },
-    "attribution": {
-      "items": {
-        "type": "string"
-      },
-      "title": "Attribution",
-      "type": "array"
-    },
     "metadata": {
       "additionalProperties": true,
       "title": "Metadata",
       "type": "object"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "parameters": {
+      "additionalProperties": {
+        "$ref": "#/$defs/DomainParameterSpec"
+      },
+      "title": "Parameters",
+      "type": "object"
+    },
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source_policy": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source Policy"
+    },
+    "templates": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Templates",
+      "type": "array"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
     }
   },
   "required": [

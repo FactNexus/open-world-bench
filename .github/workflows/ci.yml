@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: uv sync --all-extras
+      - name: Lint
+        run: uv run ruff check .
+      - name: Type check
+        run: uv run mypy src
+      - name: Tests
+        run: uv run pytest
+      - name: Schemas are in sync with models
+        run: uv run owrb schemas generate --check
+      - name: Sample domain pack validates
+        run: uv run owrb domain validate domains/australian-tourism

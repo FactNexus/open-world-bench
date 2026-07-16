@@ -3,25 +3,16 @@
     "Citation": {
       "additionalProperties": false,
       "properties": {
+        "answer_spans": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Answer Spans",
+          "type": "array"
+        },
         "id": {
           "title": "Id",
           "type": "string"
-        },
-        "url": {
-          "title": "Url",
-          "type": "string"
-        },
-        "title": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Title"
         },
         "source_name": {
           "anyOf": [
@@ -35,12 +26,21 @@
           "default": null,
           "title": "Source Name"
         },
-        "answer_spans": {
-          "items": {
-            "type": "string"
-          },
-          "title": "Answer Spans",
-          "type": "array"
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
         }
       },
       "required": [
@@ -53,29 +53,17 @@
     "RunMetrics": {
       "additionalProperties": false,
       "properties": {
-        "latency_ms": {
+        "cost_usd": {
           "anyOf": [
             {
-              "type": "integer"
+              "type": "number"
             },
             {
               "type": "null"
             }
           ],
           "default": null,
-          "title": "Latency Ms"
-        },
-        "time_to_first_token_ms": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Time To First Token Ms"
+          "title": "Cost Usd"
         },
         "input_tokens": {
           "anyOf": [
@@ -88,6 +76,18 @@
           ],
           "default": null,
           "title": "Input Tokens"
+        },
+        "latency_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Latency Ms"
         },
         "output_tokens": {
           "anyOf": [
@@ -113,18 +113,6 @@
           "default": null,
           "title": "Retrieved Context Tokens"
         },
-        "tool_calls": {
-          "anyOf": [
-            {
-              "type": "integer"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Tool Calls"
-        },
         "searches": {
           "anyOf": [
             {
@@ -137,6 +125,30 @@
           "default": null,
           "title": "Searches"
         },
+        "time_to_first_token_ms": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Time To First Token Ms"
+        },
+        "tool_calls": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Calls"
+        },
         "unique_sources": {
           "anyOf": [
             {
@@ -148,18 +160,6 @@
           ],
           "default": null,
           "title": "Unique Sources"
-        },
-        "cost_usd": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Cost Usd"
         }
       },
       "title": "RunMetrics",
@@ -168,21 +168,42 @@
   },
   "additionalProperties": false,
   "properties": {
-    "schema_version": {
-      "default": 1,
-      "title": "Schema Version",
-      "type": "integer"
+    "answer": {
+      "title": "Answer",
+      "type": "string"
+    },
+    "citations": {
+      "items": {
+        "$ref": "#/$defs/Citation"
+      },
+      "title": "Citations",
+      "type": "array"
+    },
+    "completed_at": {
+      "format": "date-time",
+      "title": "Completed At",
+      "type": "string"
+    },
+    "metrics": {
+      "$ref": "#/$defs/RunMetrics"
+    },
+    "provider_metadata": {
+      "additionalProperties": true,
+      "title": "Provider Metadata",
+      "type": "object"
     },
     "scenario_instance_id": {
       "title": "Scenario Instance Id",
       "type": "string"
     },
-    "system_id": {
-      "title": "System Id",
-      "type": "string"
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
     },
-    "trial_id": {
-      "title": "Trial Id",
+    "started_at": {
+      "format": "date-time",
+      "title": "Started At",
       "type": "string"
     },
     "status": {
@@ -195,29 +216,13 @@
       "title": "Status",
       "type": "string"
     },
-    "started_at": {
-      "format": "date-time",
-      "title": "Started At",
+    "system_id": {
+      "title": "System Id",
       "type": "string"
     },
-    "completed_at": {
-      "format": "date-time",
-      "title": "Completed At",
+    "trial_id": {
+      "title": "Trial Id",
       "type": "string"
-    },
-    "answer": {
-      "title": "Answer",
-      "type": "string"
-    },
-    "citations": {
-      "items": {
-        "$ref": "#/$defs/Citation"
-      },
-      "title": "Citations",
-      "type": "array"
-    },
-    "metrics": {
-      "$ref": "#/$defs/RunMetrics"
     },
     "warnings": {
       "items": {
@@ -225,11 +230,6 @@
       },
       "title": "Warnings",
       "type": "array"
-    },
-    "provider_metadata": {
-      "additionalProperties": true,
-      "title": "Provider Metadata",
-      "type": "object"
     }
   },
   "required": [

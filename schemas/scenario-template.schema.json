@@ -3,6 +3,11 @@
     "AnswerContract": {
       "additionalProperties": false,
       "properties": {
+        "citations_required": {
+          "default": true,
+          "title": "Citations Required",
+          "type": "boolean"
+        },
         "format": {
           "default": "markdown",
           "enum": [
@@ -12,11 +17,6 @@
           ],
           "title": "Format",
           "type": "string"
-        },
-        "citations_required": {
-          "default": true,
-          "title": "Citations Required",
-          "type": "boolean"
         },
         "instructions": {
           "items": {
@@ -32,20 +32,12 @@
     "CriterionSpec": {
       "additionalProperties": false,
       "properties": {
-        "id": {
-          "title": "Id",
+        "description": {
+          "title": "Description",
           "type": "string"
         },
         "dimension": {
           "title": "Dimension",
-          "type": "string"
-        },
-        "title": {
-          "title": "Title",
-          "type": "string"
-        },
-        "description": {
-          "title": "Description",
           "type": "string"
         },
         "hard": {
@@ -53,11 +45,13 @@
           "title": "Hard",
           "type": "boolean"
         },
-        "weight": {
-          "default": 1.0,
-          "exclusiveMinimum": 0,
-          "title": "Weight",
-          "type": "number"
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
         },
         "validator": {
           "anyOf": [
@@ -70,6 +64,12 @@
           ],
           "default": null,
           "title": "Validator"
+        },
+        "weight": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "title": "Weight",
+          "type": "number"
         }
       },
       "required": [
@@ -84,9 +84,10 @@
     "ProviderSpec": {
       "additionalProperties": false,
       "properties": {
-        "type": {
-          "title": "Type",
-          "type": "string"
+        "options": {
+          "additionalProperties": true,
+          "title": "Options",
+          "type": "object"
         },
         "path": {
           "anyOf": [
@@ -100,6 +101,10 @@
           "default": null,
           "title": "Path"
         },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
         "values": {
           "anyOf": [
             {
@@ -112,11 +117,6 @@
           ],
           "default": null,
           "title": "Values"
-        },
-        "options": {
-          "additionalProperties": true,
-          "title": "Options",
-          "type": "object"
         }
       },
       "required": [
@@ -128,7 +128,7 @@
     "TemplateParameterSpec": {
       "additionalProperties": false,
       "properties": {
-        "source": {
+        "description": {
           "anyOf": [
             {
               "type": "string"
@@ -138,7 +138,7 @@
             }
           ],
           "default": null,
-          "title": "Source"
+          "title": "Description"
         },
         "provider": {
           "anyOf": [
@@ -156,7 +156,7 @@
           "title": "Required",
           "type": "boolean"
         },
-        "description": {
+        "source": {
           "anyOf": [
             {
               "type": "string"
@@ -166,7 +166,7 @@
             }
           ],
           "default": null,
-          "title": "Description"
+          "title": "Source"
         }
       },
       "title": "TemplateParameterSpec",
@@ -175,23 +175,15 @@
   },
   "additionalProperties": false,
   "properties": {
-    "schema_version": {
-      "default": 1,
-      "title": "Schema Version",
-      "type": "integer"
+    "answer_contract": {
+      "$ref": "#/$defs/AnswerContract"
     },
-    "id": {
-      "pattern": "^[a-z0-9][a-z0-9-]*$",
-      "title": "Id",
-      "type": "string"
-    },
-    "name": {
-      "title": "Name",
-      "type": "string"
-    },
-    "version": {
-      "title": "Version",
-      "type": "string"
+    "criteria": {
+      "items": {
+        "$ref": "#/$defs/CriterionSpec"
+      },
+      "title": "Criteria",
+      "type": "array"
     },
     "description": {
       "anyOf": [
@@ -205,41 +197,6 @@
       "default": null,
       "title": "Description"
     },
-    "prompt": {
-      "title": "Prompt",
-      "type": "string"
-    },
-    "parameters": {
-      "additionalProperties": {
-        "$ref": "#/$defs/TemplateParameterSpec"
-      },
-      "title": "Parameters",
-      "type": "object"
-    },
-    "criteria": {
-      "items": {
-        "$ref": "#/$defs/CriterionSpec"
-      },
-      "title": "Criteria",
-      "type": "array"
-    },
-    "rules": {
-      "items": {
-        "type": "string"
-      },
-      "title": "Rules",
-      "type": "array"
-    },
-    "answer_contract": {
-      "$ref": "#/$defs/AnswerContract"
-    },
-    "tags": {
-      "items": {
-        "type": "string"
-      },
-      "title": "Tags",
-      "type": "array"
-    },
     "difficulty": {
       "default": "mixed",
       "enum": [
@@ -249,6 +206,49 @@
         "mixed"
       ],
       "title": "Difficulty",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "parameters": {
+      "additionalProperties": {
+        "$ref": "#/$defs/TemplateParameterSpec"
+      },
+      "title": "Parameters",
+      "type": "object"
+    },
+    "prompt": {
+      "title": "Prompt",
+      "type": "string"
+    },
+    "rules": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Rules",
+      "type": "array"
+    },
+    "schema_version": {
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Tags",
+      "type": "array"
+    },
+    "version": {
+      "title": "Version",
       "type": "string"
     }
   },
