@@ -50,6 +50,8 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 # Typer's CLI idiom requires function calls in argument defaults.
 "src/owrb/cli.py" = ["B008"]
+# Embedded HTML report templates read better without hard wrapping.
+"src/owrb/reporting.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

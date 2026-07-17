@@ -386,10 +386,72 @@ def refresh_evidence_command(
 
 
 @app.command("compare")
-def compare_run_set() -> None:
-    """Compare systems. Implementation target for Milestone 4."""
-    typer.echo("Comparison is specified but not implemented yet.", err=True)
-    raise typer.Exit(code=2)
+def compare_run_set(
+    run_set: Path = typer.Option(..., "--run-set", help="Run-set directory"),
+    json_output: bool = typer.Option(False, "--json", help="Emit the full comparison JSON"),
+) -> None:
+    """Compare systems in a run set: quality, paired wins, and efficiency."""
+    from owrb.stats import build_comparison
+
+    try:
+        comparison = build_comparison(run_set)
+    except ValueError as error:
+        typer.echo(f"Comparison failed: {error}", err=True)
+        raise typer.Exit(code=1) from error
+
+    if json_output:
+        typer.echo(json.dumps(comparison, indent=2))
+        return
+    for warning in comparison["warnings"]:
+        typer.echo(f"warning: {warning}", err=True)
+    typer.echo(
+        f"Run set {comparison['run_set']}: {comparison['scenario_count']} scenarios, "
+        f"{comparison['trial_count']} trials"
+    )
+    for system in comparison["systems"]:
+        quality = system.get("quality")
+        if quality:
+            typer.echo(
+                f"  {system['system_id']}: quality {quality['mean']:.1f} "
+                f"[{quality['ci95'][0]:.1f}, {quality['ci95'][1]:.1f}] "
+                f"(completion {system['completion_rate']:.0%})"
+            )
+        else:
+            typer.echo(
+                f"  {system['system_id']}: not evaluated "
+                f"(completion {system['completion_rate']:.0%})"
+            )
+    for pair in comparison["pairwise"]:
+        typer.echo(
+            f"  {pair['system_a']} vs {pair['system_b']}: "
+            f"{pair['wins']}W/{pair['ties']}T/{pair['losses']}L, "
+            f"mean diff {pair['mean_difference']:+.1f}"
+        )
+
+
+@app.command("report")
+def report_run_set(
+    run_set: Path = typer.Option(..., "--run-set", help="Run-set directory"),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON"),
+) -> None:
+    """Write the offline static HTML reports and CSV/JSON exports."""
+    from owrb.reporting import write_reports
+
+    try:
+        summary = write_reports(run_set)
+    except ValueError as error:
+        typer.echo(f"Report failed: {error}", err=True)
+        raise typer.Exit(code=1) from error
+
+    if json_output:
+        typer.echo(json.dumps(summary, indent=2))
+    else:
+        for warning in summary["warnings"]:
+            typer.echo(f"warning: {warning}", err=True)
+        typer.echo(
+            f"Wrote {summary['trial_reports']} trial reports and the comparison "
+            f"dashboard to {summary['index']}"
+        )
 
 
 if __name__ == "__main__":

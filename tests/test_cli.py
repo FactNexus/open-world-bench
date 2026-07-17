@@ -68,7 +68,10 @@ def test_systems_validate() -> None:
     assert result.exit_code == 0, result.output
 
 
-def test_unimplemented_commands_exit_2() -> None:
-    for command in ("run", "evaluate", "compare"):
-        result = runner.invoke(app, [command])
-        assert result.exit_code == 2
+def test_all_spec_commands_are_registered() -> None:
+    # SPEC.md section 19 command surface.
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    for command in ("domain", "scenarios", "systems", "run", "import", "evaluate",
+                    "compare", "report", "evidence", "schemas"):
+        assert command in result.output, f"missing command: {command}"

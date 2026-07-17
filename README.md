@@ -34,9 +34,16 @@ Implemented so far (Milestones 0 and 1 of SPEC.md §26):
 - evidence and evaluation: SSRF-guarded, cached, polite evidence retrieval; a shared
   per-scenario evidence bundle; deterministic checks; claim decomposition and
   citation-support verdicts; blind rubric judging; dimension weighting with
-  hard-constraint capping; per-trial `evaluation.json` artefacts.
+  hard-constraint capping; per-trial `evaluation.json` artefacts;
+- comparison and reporting: per-system quality aggregates with bootstrap 95%
+  confidence intervals, paired win/tie/loss matrices on shared scenarios,
+  per-template breakdowns, efficiency aggregates with a quality-cost Pareto
+  frontier, offline static HTML reports, and CSV/JSON exports.
 
-Comparison and reporting are the next implementation targets (Milestone 4).
+This completes the SPEC.md §27 MVP command surface. Remaining Milestone 5 work
+(baseline release) covers content rather than framework: an expanded location
+snapshot, six-plus scenario templates, a 100-instance public development suite,
+baseline runs, and a methodology document.
 
 ## Core workflow
 
@@ -76,6 +83,8 @@ owrb run --suite suites/australian-tourism-dev.example.yaml
 owrb import --run-set runs/<id> --scenario <instance-id> --system <id> --answer answer.md
 owrb evaluate --run-set runs/<id> [--judge-adapter anthropic --judge-model <model>]
 owrb evidence refresh --run-set runs/<id>
+owrb compare --run-set runs/<id> [--json]
+owrb report --run-set runs/<id>
 ```
 
 Generated instances are written to `runs/scenarios/<domain>-seed<seed>/` (override with
@@ -96,12 +105,10 @@ support against the retrieved evidence, and scores template criteria blind to th
 candidate's identity. Without a judge it still produces deterministic scores and
 marks results as requiring review.
 
-Implementation targets (exit with code 2 for now):
-
-```bash
-owrb compare --run-set runs/2026-07-16-australian-tourism
-owrb report --run-set runs/2026-07-16-australian-tourism
-```
+`owrb report` writes a self-contained dashboard to `runs/<id>/report/index.html`
+(no scripts, no external assets — it works offline), a `report.html` audit view in
+every trial directory, and `comparison.json` / `summary.csv` / `pairwise.csv` /
+`per-template.csv` exports covering every number shown in the dashboard.
 
 ## Minimal domain pack
 
