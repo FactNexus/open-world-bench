@@ -14,5 +14,8 @@ dist/
 # Local secrets (SPEC.md §20)
 .env
 
+# IDE
+.idea/
+
 # Packaged snapshot of this repo
 open-world-research-benchmark.tar.gz
