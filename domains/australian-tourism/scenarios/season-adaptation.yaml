@@ -1,0 +1,74 @@
+schema_version: 1
+id: season-adaptation
+name: Weather and season adaptation
+version: 0.1.0
+description: >
+  Adapt recommendations to a stated season and forecast condition instead of
+  giving generic all-weather suggestions.
+prompt: |
+  {{ traveller.description | capitalize }} is visiting {{ location.name }},
+  {{ location.state_or_territory }}, in {{ season }}, and
+  {{ condition.description }}.
+
+  Recommend {{ recommendation_count }} experiences connected with
+  {{ interest.label }} that make sense for that season and forecast. Explain
+  how each recommendation responds to the conditions, and note any options
+  that would normally be attractive but should be avoided or may close under
+  this forecast. Verify seasonal operating information — opening months,
+  seasonal closures, condition-dependent access — with current sources, cite
+  them close to the claims they support, and state uncertainty where the
+  forecast makes outcomes genuinely unpredictable.
+parameters:
+  location:
+    source: location
+  traveller:
+    source: traveller
+  interest:
+    source: interest
+  season:
+    provider:
+      type: values
+      values: [summer, autumn, winter, spring]
+  condition:
+    source: condition
+  recommendation_count:
+    provider:
+      type: values
+      values: [3, 4]
+rules:
+  - "not (interest.id == 'coast' and location.coastal == 0)"
+  - "season in condition.seasons"
+criteria:
+  - id: condition-fit
+    dimension: constraint_satisfaction
+    title: Recommendations respond to the stated season and forecast
+    description: >
+      Recommendations should be appropriate for the stated season and
+      forecast condition, not generic suggestions that ignore them. An
+      unmodified recommendation that the forecast makes unsafe or closed is a
+      violation.
+    hard: true
+  - id: adaptation-reasoning
+    dimension: coverage
+    title: The adaptation is explained
+    description: >
+      The answer should explain how the conditions shaped each choice and
+      identify options to avoid, rather than silently filtering.
+  - id: seasonal-evidence
+    dimension: citation_support
+    title: Seasonal operating claims are cited
+    description: >
+      Claims about seasonal opening, closures, and condition-dependent access
+      should be supported by suitable current sources.
+  - id: traveller-fit
+    dimension: coverage
+    title: Recommendations fit the traveller
+    description: The stated traveller profile should visibly shape the choices.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Give a direct answer rather than describing a research process.
+    - Identify at least one otherwise-attractive option that the conditions rule out, when one exists.
+tags: [seasonal, weather, recommendations]
+difficulty: medium

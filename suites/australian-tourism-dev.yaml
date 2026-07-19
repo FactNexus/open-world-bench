@@ -1,0 +1,43 @@
+# The public 100-instance development suite (SPEC.md Milestone 5).
+# The frozen instances generated from this configuration are committed under
+# examples/dev-suite/ and regenerate byte-identically (except generated_at)
+# from this seed and domain pack version.
+schema_version: 1
+id: australian-tourism-dev
+name: Australian tourism development suite
+domain:
+  id: australian-tourism
+  path: domains/australian-tourism
+scenario_generation:
+  seed: 20260718
+  count: 100
+  template_quotas:
+    nearby-discovery: 20
+    constrained-day-plan: 20
+    compare-destinations: 15
+    accessible-experiences: 15
+    season-adaptation: 15
+    remote-area-plan: 15
+systems:
+  - systems/baseline-anthropic.yaml
+repetitions: 1
+randomise_system_order: true
+concurrency: 2
+run_timeout_seconds: 300
+evaluation:
+  quality_weights:
+    constraint_satisfaction: 25
+    citation_support: 25
+    factual_correctness: 20
+    coverage: 15
+    source_quality_freshness: 10
+    clarity: 5
+  hard_constraint_score_cap: 49
+  evidence_cache: true
+  judge:
+    adapter: anthropic
+    model: claude-opus-4-8
+reporting:
+  static_html: true
+  export_json: true
+  export_csv: true

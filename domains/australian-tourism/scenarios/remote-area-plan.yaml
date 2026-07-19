@@ -1,0 +1,74 @@
+schema_version: 1
+id: remote-area-plan
+name: Remote-area trip planning
+version: 0.1.0
+description: >
+  Plan a short visit to a remote destination where information is sparse and
+  practical constraints — distances, fuel, supplies, transport, connectivity —
+  dominate.
+prompt: |
+  {{ traveller.description | capitalize }} is planning {{ trip_days }} days
+  based in {{ location.name }}, {{ location.state_or_territory }}, travelling
+  with {{ transport.description }}.
+
+  Outline a realistic plan for the visit. Treat the practicalities of a remote
+  area as first-class concerns: driving distances and road surfaces, fuel and
+  supply points, water and heat precautions, mobile coverage, seasonal or
+  weather-dependent road access, and how far ahead accommodation, fuel stops,
+  or tours must be booked. Recommend experiences that genuinely suit the
+  transport situation, and say clearly what is not feasible with it. Where
+  current information is thin or conflicting for this area, say so explicitly
+  rather than guessing, and cite the sources you relied on close to the
+  relevant statements.
+parameters:
+  location:
+    source: location
+  traveller:
+    source: traveller
+  transport:
+    source: transport
+  trip_days:
+    provider:
+      type: values
+      values: [2, 3, 4]
+rules:
+  - "location.remoteness == 'remote'"
+criteria:
+  - id: transport-feasibility
+    dimension: constraint_satisfaction
+    title: The plan is feasible with the stated transport
+    description: >
+      Every element of the plan must be achievable with the stated transport
+      situation. Recommending an unsealed-road destination to a standard hire
+      car, or an unreachable site to a visitor without a vehicle, is a
+      violation unless clearly flagged with an alternative.
+    hard: true
+    weight: 2.0
+  - id: remote-practicalities
+    dimension: coverage
+    title: Remote-area practicalities are addressed
+    description: >
+      The plan should address distances, fuel or supply points, safety
+      precautions, connectivity, and booking lead times where relevant, not
+      just list attractions.
+  - id: current-conditions
+    dimension: citation_support
+    title: Access and condition claims are supported by current sources
+    description: >
+      Road access, opening, and tour availability claims for remote areas
+      change often and must be supported by suitably fresh sources.
+  - id: information-gaps
+    dimension: clarity
+    title: Sparse or conflicting information is acknowledged
+    description: >
+      Where reliable current information is unavailable, the answer should
+      say so and advise how to confirm locally, rather than presenting
+      guesses as facts.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Present the plan day by day in a practical order.
+    - Distinguish confirmed details from estimates and local-confirmation items.
+tags: [remote, planning, transport, safety]
+difficulty: hard

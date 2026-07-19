@@ -1,7 +1,7 @@
 schema_version: 1
 id: nearby-discovery
 name: Nearby experience discovery
-version: 0.1.0
+version: 0.2.0
 description: Find a small set of suitable experiences around a generated Australian location.
 prompt: |
   {{ traveller.description | capitalize }} is staying in {{ location.name }},
@@ -30,6 +30,8 @@ parameters:
     provider:
       type: values
       values: [25, 50, 100]
+rules:
+  - "not (interest.id == 'coast' and location.coastal == 0)"
 criteria:
   - id: requested-count
     dimension: constraint_satisfaction

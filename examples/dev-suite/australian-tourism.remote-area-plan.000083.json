@@ -1,0 +1,97 @@
+{
+  "answer_contract": {
+    "citations_required": true,
+    "format": "markdown",
+    "instructions": [
+      "Present the plan day by day in a practical order.",
+      "Distinguish confirmed details from estimates and local-confirmation items."
+    ]
+  },
+  "criteria": [
+    {
+      "description": "Every element of the plan must be achievable with the stated transport situation. Recommending an unsealed-road destination to a standard hire car, or an unreachable site to a visitor without a vehicle, is a violation unless clearly flagged with an alternative.\n",
+      "dimension": "constraint_satisfaction",
+      "hard": true,
+      "id": "transport-feasibility",
+      "title": "The plan is feasible with the stated transport",
+      "validator": null,
+      "weight": 2.0
+    },
+    {
+      "description": "The plan should address distances, fuel or supply points, safety precautions, connectivity, and booking lead times where relevant, not just list attractions.\n",
+      "dimension": "coverage",
+      "hard": false,
+      "id": "remote-practicalities",
+      "title": "Remote-area practicalities are addressed",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Road access, opening, and tour availability claims for remote areas change often and must be supported by suitably fresh sources.\n",
+      "dimension": "citation_support",
+      "hard": false,
+      "id": "current-conditions",
+      "title": "Access and condition claims are supported by current sources",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Where reliable current information is unavailable, the answer should say so and advise how to confirm locally, rather than presenting guesses as facts.\n",
+      "dimension": "clarity",
+      "hard": false,
+      "id": "information-gaps",
+      "title": "Sparse or conflicting information is acknowledged",
+      "validator": null,
+      "weight": 1.0
+    }
+  ],
+  "domain_id": "australian-tourism",
+  "domain_version": "0.2.0",
+  "generated_at": "2026-07-19T23:28:47.623985Z",
+  "id": "australian-tourism.remote-area-plan.000083",
+  "parameters": {
+    "location": {
+      "coastal": 0,
+      "id": "jabiru",
+      "latitude": -12.671,
+      "location_type": "town",
+      "longitude": 132.836,
+      "name": "Jabiru (Kakadu)",
+      "region": "Kakadu and Arnhem",
+      "remoteness": "remote",
+      "sampling_weight": 1,
+      "state_or_territory": "NT"
+    },
+    "transport": {
+      "description": "a standard two-wheel-drive hire car",
+      "id": "standard-car"
+    },
+    "traveller": {
+      "children": 0,
+      "description": "active retirees who prefer moderate rather than strenuous walking",
+      "id": "active-retirees",
+      "party_size": 2
+    },
+    "trip_days": 3
+  },
+  "prompt": "Active retirees who prefer moderate rather than strenuous walking is planning 3 days\nbased in Jabiru (Kakadu), NT, travelling\nwith a standard two-wheel-drive hire car.\n\nOutline a realistic plan for the visit. Treat the practicalities of a remote\narea as first-class concerns: driving distances and road surfaces, fuel and\nsupply points, water and heat precautions, mobile coverage, seasonal or\nweather-dependent road access, and how far ahead accommodation, fuel stops,\nor tours must be booked. Recommend experiences that genuinely suit the\ntransport situation, and say clearly what is not feasible with it. Where\ncurrent information is thin or conflicting for this area, say so explicitly\nrather than guessing, and cite the sources you relied on close to the\nrelevant statements.",
+  "schema_version": 1,
+  "seed": 10587455189024583599,
+  "source_hashes": {
+    "values/access-needs.yaml": "f6d93c94fad9f10eb34c806517cbf1a7def9b5ebb578b0987dccdf08fff63aed",
+    "values/constraints.yaml": "ca7b0dd198064463f45ff7ab2472e381b90231663689ce1718f472096bbfe498",
+    "values/interests.yaml": "40abf1269f66b94a910e8045bf14773b29148910f2701158d7767f827f1ad5ec",
+    "values/locations.csv": "71630af7f0d7f474a710689c4d050e845ec6f9445ac7f0011c170a3f5b6aa7ce",
+    "values/transport.yaml": "af44f0134fa4735f1a9f1045d12ef829d57630af8b6affd4b8363636a86c8c81",
+    "values/travellers.yaml": "8c89ba5296a6228ea94e30f9b0048ea380bd53ad887da751fa557d7e5a215832",
+    "values/weather.yaml": "3bd13d59b127f32fde6c9f792f4ac520727d3dbc289dc131404a0b8e039ebbb0"
+  },
+  "tags": [
+    "remote",
+    "planning",
+    "transport",
+    "safety"
+  ],
+  "template_id": "remote-area-plan",
+  "template_version": "0.1.0"
+}

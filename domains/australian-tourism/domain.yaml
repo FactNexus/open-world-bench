@@ -4,7 +4,7 @@ name: Australian tourism
 description: >
   Open-world research and recommendation scenarios concerning travel and tourism
   within Australia.
-version: 0.1.0
+version: 0.2.0
 default_locale: en-AU
 default_timezone: Australia/Sydney
 templates:
@@ -30,9 +30,30 @@ parameters:
     provider:
       type: yaml_list
       path: values/constraints.yaml
+  access_need:
+    description: Accessibility requirement that recommendations must meet with explicit evidence.
+    provider:
+      type: yaml_list
+      path: values/access-needs.yaml
+  transport:
+    description: Transport situation for remote-area planning.
+    provider:
+      type: yaml_list
+      path: values/transport.yaml
+  condition:
+    description: Forecast weather condition, constrained to compatible seasons by template rules.
+    provider:
+      type: yaml_list
+      path: values/weather.yaml
 source_policy: source-policy.yaml
 licence: MIT for authored templates; source datasets retain their own licences
 attribution: []
 metadata:
-  maturity: scaffold
-  intended_public_release: false
+  maturity: beta
+  intended_public_release: true
+  location_snapshot:
+    source: hand-curated by OWRB contributors (no OpenStreetMap or other database extracts)
+    snapshot_date: "2026-07-18"
+    coordinate_precision: approximate (about 1 km); scenario-generation input only, never evidence
+    row_count: 76
+    licence: MIT (part of the authored domain pack)

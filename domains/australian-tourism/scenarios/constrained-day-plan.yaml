@@ -1,7 +1,7 @@
 schema_version: 1
 id: constrained-day-plan
 name: Constrained one-day plan
-version: 0.1.0
+version: 0.2.0
 description: Build a practical day plan around a generated location and traveller profile.
 prompt: |
   Create a one-day visitor plan based in {{ location.name }},
@@ -26,6 +26,8 @@ parameters:
     provider:
       type: values
       values: [2, 3, 4]
+rules:
+  - "not (interest.id == 'coast' and location.coastal == 0)"
 criteria:
   - id: feasible-sequence
     dimension: constraint_satisfaction

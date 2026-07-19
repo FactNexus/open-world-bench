@@ -1,0 +1,14 @@
+# Accessibility requirements for the accessible-experiences template.
+# Each need must be supported by explicit evidence in candidate answers.
+- id: wheelchair
+  description: full wheelchair access, including step-free entry and an accessible toilet
+- id: limited-walking
+  description: no more than about 500 metres of walking, with seating available along the way
+- id: step-free
+  description: step-free access throughout, without stairs or steep ramps
+- id: accessible-parking
+  description: accessible parking or drop-off within a short, level distance of the entrance
+- id: sensory-friendly
+  description: a calm, low-noise environment or dedicated quiet times suitable for sensory-sensitive visitors
+- id: vision-support
+  description: good support for a visitor with low vision, such as tactile exhibits, audio guides, or guided assistance

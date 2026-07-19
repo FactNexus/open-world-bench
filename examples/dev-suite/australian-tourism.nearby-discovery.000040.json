@@ -1,0 +1,101 @@
+{
+  "answer_contract": {
+    "citations_required": true,
+    "format": "markdown",
+    "instructions": [
+      "Give a direct answer rather than describing a research process.",
+      "Use citations close to the claims they support."
+    ]
+  },
+  "criteria": [
+    {
+      "description": "The answer should provide exactly the requested number, excluding clearly labelled backups.",
+      "dimension": "constraint_satisfaction",
+      "hard": false,
+      "id": "requested-count",
+      "title": "Provides the requested number of recommendations",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Options should be within the approximate maximum distance or clearly identify and justify an exception.",
+      "dimension": "constraint_satisfaction",
+      "hard": true,
+      "id": "radius",
+      "title": "Recommendations are within the stated radius",
+      "validator": "geo.radius",
+      "weight": 1.0
+    },
+    {
+      "description": "Each recommendation should address the stated traveller profile and constraint.",
+      "dimension": "coverage",
+      "hard": false,
+      "id": "traveller-fit",
+      "title": "Recommendations fit the traveller and additional requirement",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Operational and suitability claims should be supported by sources appropriate to those claims.",
+      "dimension": "citation_support",
+      "hard": false,
+      "id": "evidence",
+      "title": "Material claims are supported by suitable current citations",
+      "validator": null,
+      "weight": 1.0
+    }
+  ],
+  "domain_id": "australian-tourism",
+  "domain_version": "0.2.0",
+  "generated_at": "2026-07-19T23:28:47.581791Z",
+  "id": "australian-tourism.nearby-discovery.000040",
+  "parameters": {
+    "constraint": {
+      "description": "use only options with explicit evidence of wheelchair accessibility",
+      "id": "wheelchair"
+    },
+    "interest": {
+      "id": "coast",
+      "label": "coastal scenery and beaches"
+    },
+    "location": {
+      "coastal": 1,
+      "id": "hervey-bay",
+      "latitude": -25.288,
+      "location_type": "city",
+      "longitude": 152.841,
+      "name": "Hervey Bay",
+      "region": "Fraser Coast",
+      "remoteness": "regional",
+      "sampling_weight": 1,
+      "state_or_territory": "QLD"
+    },
+    "max_distance_km": 25,
+    "recommendation_count": 3,
+    "traveller": {
+      "children": 0,
+      "description": "a solo traveller without access to a private car",
+      "id": "solo-no-car",
+      "party_size": 1
+    }
+  },
+  "prompt": "A solo traveller without access to a private car is staying in Hervey Bay,\nQLD. Recommend 3 experiences\nconnected with coastal scenery and beaches within approximately 25 km.\n\nAdditional requirement: use only options with explicit evidence of wheelchair accessibility.\n\nExplain briefly why each option fits. Verify any operating, access, price, booking,\ntransport, or accessibility claims using current sources. Place citations close to\nthe claims they support and identify any important uncertainty.",
+  "schema_version": 1,
+  "seed": 1253176980486424752,
+  "source_hashes": {
+    "values/access-needs.yaml": "f6d93c94fad9f10eb34c806517cbf1a7def9b5ebb578b0987dccdf08fff63aed",
+    "values/constraints.yaml": "ca7b0dd198064463f45ff7ab2472e381b90231663689ce1718f472096bbfe498",
+    "values/interests.yaml": "40abf1269f66b94a910e8045bf14773b29148910f2701158d7767f827f1ad5ec",
+    "values/locations.csv": "71630af7f0d7f474a710689c4d050e845ec6f9445ac7f0011c170a3f5b6aa7ce",
+    "values/transport.yaml": "af44f0134fa4735f1a9f1045d12ef829d57630af8b6affd4b8363636a86c8c81",
+    "values/travellers.yaml": "8c89ba5296a6228ea94e30f9b0048ea380bd53ad887da751fa557d7e5a215832",
+    "values/weather.yaml": "3bd13d59b127f32fde6c9f792f4ac520727d3dbc289dc131404a0b8e039ebbb0"
+  },
+  "tags": [
+    "discovery",
+    "local",
+    "recommendations"
+  ],
+  "template_id": "nearby-discovery",
+  "template_version": "0.2.0"
+}

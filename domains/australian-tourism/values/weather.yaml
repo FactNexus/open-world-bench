@@ -1,0 +1,21 @@
+# Forecast conditions for the season-adaptation template.
+# `seasons` lists the broad Australian seasons each condition may be paired
+# with; a template compatibility rule enforces the pairing.
+- id: heatwave
+  description: a run of days above 38 degrees Celsius is forecast
+  seasons: [summer, spring]
+- id: heavy-rain
+  description: sustained heavy rain is forecast for most of the visit
+  seasons: [summer, autumn, winter, spring]
+- id: strong-wind
+  description: damaging wind warnings are current for the area
+  seasons: [autumn, winter, spring]
+- id: cold-snap
+  description: unusually cold conditions with possible frost or alpine snow are forecast
+  seasons: [autumn, winter]
+- id: fire-danger
+  description: severe fire danger ratings are forecast, with possible park and trail closures
+  seasons: [summer, spring]
+- id: fine-mild
+  description: fine, mild weather is forecast for the whole visit
+  seasons: [summer, autumn, winter, spring]

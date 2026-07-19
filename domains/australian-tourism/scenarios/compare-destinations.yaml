@@ -1,7 +1,7 @@
 schema_version: 1
 id: compare-destinations
 name: Compare two destinations
-version: 0.1.0
+version: 0.2.0
 description: Compare two generated Australian destinations for a traveller profile.
 prompt: |
   Compare {{ location_a.name }}, {{ location_a.state_or_territory }}, and
@@ -24,6 +24,7 @@ parameters:
   constraint:
     source: constraint
 rules:
+  - "not (interest.id == 'coast' and (location_a.coastal == 0 or location_b.coastal == 0))"
   - "location_a.id != location_b.id"
 criteria:
   - id: genuine-comparison

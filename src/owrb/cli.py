@@ -113,9 +113,16 @@ def list_domains(
 
 @scenario_app.command("generate")
 def generate_scenarios(
-    domain: str = typer.Option(..., "--domain", help="Domain pack ID or directory"),
-    count: int = typer.Option(..., "--count", min=1, help="Number of instances to generate"),
-    seed: int = typer.Option(..., "--seed", help="Suite seed for deterministic generation"),
+    domain: str | None = typer.Option(None, "--domain", help="Domain pack ID or directory"),
+    count: int | None = typer.Option(
+        None, "--count", min=1, help="Number of instances to generate"
+    ),
+    seed: int | None = typer.Option(
+        None, "--seed", help="Suite seed for deterministic generation"
+    ),
+    suite: Path | None = typer.Option(
+        None, "--suite", help="Take domain, seed, count, and template quotas from a suite file"
+    ),
     output: Path | None = typer.Option(
         None, "--output", help="Output directory (default: runs/scenarios/<domain>-seed<seed>)"
     ),
@@ -125,6 +132,22 @@ def generate_scenarios(
     json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON"),
 ) -> None:
     """Generate frozen, reproducible scenario instances from a domain pack."""
+    template_quotas: dict[str, int] | None = None
+    if suite is not None:
+        from owrb.runner import SuiteError, load_suite
+
+        try:
+            suite_config = load_suite(suite)
+        except SuiteError as error:
+            typer.echo(f"Invalid suite: {error}", err=True)
+            raise typer.Exit(code=1) from error
+        domain = domain or suite_config.domain.path
+        seed = seed if seed is not None else suite_config.scenario_generation.seed
+        count = count if count is not None else suite_config.scenario_generation.count
+        template_quotas = suite_config.scenario_generation.template_quotas or None
+    if domain is None or count is None or seed is None:
+        typer.echo("Provide --domain, --count, and --seed, or --suite.", err=True)
+        raise typer.Exit(code=1)
     domain_directory = _resolve_domain_directory(domain)
     validation = validate_domain_pack(domain_directory)
     if not validation.valid or validation.domain_pack is None:
@@ -140,6 +163,7 @@ def generate_scenarios(
             provider_factory=factory,
             suite_seed=seed,
             count=count,
+            template_quotas=template_quotas,
         )
     except GenerationError as error:
         typer.echo(f"Generation failed: {error}", err=True)

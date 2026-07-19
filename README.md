@@ -40,10 +40,21 @@ Implemented so far (Milestones 0 and 1 of SPEC.md §26):
   per-template breakdowns, efficiency aggregates with a quality-cost Pareto
   frontier, offline static HTML reports, and CSV/JSON exports.
 
-This completes the SPEC.md §27 MVP command surface. Remaining Milestone 5 work
-(baseline release) covers content rather than framework: an expanded location
-snapshot, six-plus scenario templates, a 100-instance public development suite,
-baseline runs, and a methodology document.
+This completes the SPEC.md §27 MVP command surface, plus the Milestone 5 baseline
+release content: a 76-location snapshot with provenance metadata, six scenario
+templates (including accessibility, season-adaptation, and remote-area planning),
+the public 100-instance development suite in [`examples/dev-suite/`](examples/dev-suite)
+(regenerates byte-identically from [`suites/australian-tourism-dev.yaml`](suites/australian-tourism-dev.yaml),
+enforced by CI), a ready-to-run baseline system configuration, and a
+[methodology and limitations document](docs/methodology.md). Baseline runs
+require provider API keys:
+
+```bash
+export ANTHROPIC_API_KEY=...   # candidate (claude-sonnet-4-6 + web search) and judge (claude-opus-4-8)
+owrb run --suite suites/australian-tourism-dev.yaml
+owrb evaluate --run-set runs/<id>
+owrb report --run-set runs/<id>
+```
 
 ## Core workflow
 

@@ -1,0 +1,20 @@
+{
+  "requested": 100,
+  "generated": 100,
+  "rule_rejections": 71,
+  "duplicate_rejections": 0,
+  "per_template": {
+    "accessible-experiences": 15,
+    "compare-destinations": 15,
+    "constrained-day-plan": 20,
+    "nearby-discovery": 20,
+    "remote-area-plan": 15,
+    "season-adaptation": 15
+  },
+  "rejected_rules": {
+    "location.remoteness == 'remote'": 62,
+    "location_a.id != location_b.id": 2,
+    "not (interest.id == 'coast' and location.coastal == 0)": 3,
+    "season in condition.seasons": 4
+  }
+}

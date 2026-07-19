@@ -1,0 +1,24 @@
+# Baseline: Claude Sonnet with provider-native web search.
+# Requires ANTHROPIC_API_KEY in the environment. Cost rates are the published
+# per-million-token prices for claude-sonnet-4-6 (July 2026); provider
+# web-search request fees are NOT included in computed cost_usd.
+schema_version: 1
+id: anthropic-sonnet-web-search
+name: Claude Sonnet 4.6 with web search
+adapter: anthropic
+provider: anthropic
+model: claude-sonnet-4-6
+capabilities:
+  web_search: true
+  citations: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  search_enabled: true
+  max_searches: 8
+  max_tokens: 4096
+  cost:
+    input_per_mtok: 3.0
+    output_per_mtok: 15.0
+environment:
+  api_key: ANTHROPIC_API_KEY

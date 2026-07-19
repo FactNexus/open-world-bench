@@ -1,0 +1,100 @@
+{
+  "answer_contract": {
+    "citations_required": true,
+    "format": "markdown",
+    "instructions": [
+      "Present the plan in chronological order.",
+      "Distinguish confirmed details from estimates."
+    ]
+  },
+  "criteria": [
+    {
+      "description": "The proposed order and travel demands should fit within one day.",
+      "dimension": "constraint_satisfaction",
+      "hard": true,
+      "id": "feasible-sequence",
+      "title": "The day is practical and geographically coherent",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "The plan should include the requested number of main activities.",
+      "dimension": "constraint_satisfaction",
+      "hard": false,
+      "id": "requested-stops",
+      "title": "Includes the requested number of principal stops",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "The plan should visibly respond to both the traveller profile and interest.",
+      "dimension": "coverage",
+      "hard": false,
+      "id": "traveller-and-interest",
+      "title": "Fits the traveller and main interest",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Time-sensitive details that affect the plan should be supported by suitable sources.",
+      "dimension": "citation_support",
+      "hard": false,
+      "id": "operational-evidence",
+      "title": "Feasibility claims have current evidence",
+      "validator": null,
+      "weight": 1.0
+    }
+  ],
+  "domain_id": "australian-tourism",
+  "domain_version": "0.2.0",
+  "generated_at": "2026-07-19T23:28:47.554930Z",
+  "id": "australian-tourism.constrained-day-plan.000015",
+  "parameters": {
+    "activity_count": 3,
+    "constraint": {
+      "description": "avoid activities requiring more than 2 kilometres of walking",
+      "id": "low-walking"
+    },
+    "interest": {
+      "id": "food-wine",
+      "label": "local food and wine"
+    },
+    "location": {
+      "coastal": 1,
+      "id": "noosa-heads",
+      "latitude": -26.398,
+      "location_type": "town",
+      "longitude": 153.089,
+      "name": "Noosa Heads",
+      "region": "Sunshine Coast",
+      "remoteness": "regional",
+      "sampling_weight": 2,
+      "state_or_territory": "QLD"
+    },
+    "traveller": {
+      "children": 0,
+      "description": "active retirees who prefer moderate rather than strenuous walking",
+      "id": "active-retirees",
+      "party_size": 2
+    }
+  },
+  "prompt": "Create a one-day visitor plan based in Noosa Heads,\nQLD, for active retirees who prefer moderate rather than strenuous walking.\nThe main interest is local food and wine. The plan should include\n3 principal stops and satisfy this requirement:\navoid activities requiring more than 2 kilometres of walking.\n\nKeep travel practical and avoid an overfilled schedule. Verify current opening,\nbooking, access, price, and transport details where they affect feasibility.\nCite the supporting sources close to the relevant statements and state uncertainty.",
+  "schema_version": 1,
+  "seed": 10411005418608987949,
+  "source_hashes": {
+    "values/access-needs.yaml": "f6d93c94fad9f10eb34c806517cbf1a7def9b5ebb578b0987dccdf08fff63aed",
+    "values/constraints.yaml": "ca7b0dd198064463f45ff7ab2472e381b90231663689ce1718f472096bbfe498",
+    "values/interests.yaml": "40abf1269f66b94a910e8045bf14773b29148910f2701158d7767f827f1ad5ec",
+    "values/locations.csv": "71630af7f0d7f474a710689c4d050e845ec6f9445ac7f0011c170a3f5b6aa7ce",
+    "values/transport.yaml": "af44f0134fa4735f1a9f1045d12ef829d57630af8b6affd4b8363636a86c8c81",
+    "values/travellers.yaml": "8c89ba5296a6228ea94e30f9b0048ea380bd53ad887da751fa557d7e5a215832",
+    "values/weather.yaml": "3bd13d59b127f32fde6c9f792f4ac520727d3dbc289dc131404a0b8e039ebbb0"
+  },
+  "tags": [
+    "planning",
+    "itinerary",
+    "one-day"
+  ],
+  "template_id": "constrained-day-plan",
+  "template_version": "0.2.0"
+}

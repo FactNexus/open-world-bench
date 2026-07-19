@@ -1,0 +1,82 @@
+schema_version: 1
+id: accessible-experiences
+name: Accessibility-aware recommendation
+version: 0.1.0
+description: >
+  Find experiences whose suitability for a stated accessibility requirement is
+  supported by explicit, current evidence rather than assumption.
+prompt: |
+  A visitor to {{ location.name }}, {{ location.state_or_territory }}, needs
+  {{ access_need.description }}. They are interested in {{ interest.label }}.
+
+  Recommend {{ recommendation_count }} experiences within approximately
+  {{ max_distance_km }} km that meet this requirement. For every
+  recommendation, the accessibility claim must rest on explicit, current
+  evidence such as the operator's own accessibility information — do not
+  assume access from general descriptions. If evidence for a promising option
+  cannot be found, say so rather than presenting it as accessible.
+
+  Include practical arrival details (parking or transport, entry) where the
+  requirement makes them important, cite sources close to the claims they
+  support, and flag anything that should be confirmed directly with the
+  operator.
+parameters:
+  location:
+    source: location
+  interest:
+    source: interest
+  access_need:
+    source: access_need
+  recommendation_count:
+    provider:
+      type: values
+      values: [2, 3]
+  max_distance_km:
+    provider:
+      type: values
+      values: [15, 30, 50]
+rules:
+  - "not (interest.id == 'coast' and location.coastal == 0)"
+criteria:
+  - id: access-evidence
+    dimension: constraint_satisfaction
+    title: Every recommendation has explicit accessibility evidence
+    description: >
+      Each recommended experience must be supported by explicit, current
+      evidence that it meets the stated accessibility requirement. A
+      recommendation presented as accessible without such evidence is a
+      violation.
+    hard: true
+    weight: 2.0
+  - id: requested-count
+    dimension: constraint_satisfaction
+    title: Provides the requested number of recommendations
+    description: >
+      The answer should provide the requested number of qualifying
+      recommendations, or clearly explain why fewer qualified.
+  - id: source-suitability
+    dimension: source_quality_freshness
+    title: Accessibility claims cite suitable sources
+    description: >
+      Operator or authority pages are suitable evidence for accessibility;
+      user reviews alone are not sufficient for access claims.
+  - id: practical-detail
+    dimension: coverage
+    title: Practical arrival and entry details are addressed
+    description: >
+      Where the requirement makes arrival practicalities important, the answer
+      should address them rather than only naming venues.
+  - id: uncertainty
+    dimension: clarity
+    title: Unverifiable accessibility is flagged
+    description: >
+      The answer should distinguish confirmed accessibility from claims that
+      need direct confirmation with the operator.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Give a direct answer rather than describing a research process.
+    - Never present an option as accessible without explicit supporting evidence.
+tags: [accessibility, recommendations, evidence]
+difficulty: hard

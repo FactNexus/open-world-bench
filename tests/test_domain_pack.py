@@ -19,4 +19,7 @@ def test_australian_tourism_templates_are_valid() -> None:
         "nearby-discovery",
         "constrained-day-plan",
         "compare-destinations",
+        "accessible-experiences",
+        "season-adaptation",
+        "remote-area-plan",
     }

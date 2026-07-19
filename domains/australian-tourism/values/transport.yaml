@@ -1,0 +1,9 @@
+# Transport situations for the remote-area planning template.
+- id: standard-car
+  description: a standard two-wheel-drive hire car
+- id: four-wheel-drive
+  description: a four-wheel-drive vehicle suitable for unsealed roads
+- id: campervan
+  description: a two-wheel-drive campervan they also sleep in
+- id: no-vehicle
+  description: no private vehicle, relying on public transport, flights, and bookable tours

@@ -27,7 +27,10 @@ from jinja2 import TemplateError as JinjaTemplateError
 from owrb.expressions import ExpressionError, evaluate_expression
 from owrb.models import DomainPack, ProviderSpec, ScenarioInstance, ScenarioTemplate
 
-DEFAULT_MAX_ATTEMPTS = 25
+# High enough that a rule selecting a minority parameter slice (e.g. the
+# remote-area template's remote-locations-only rule, ~20% of the weighted
+# location pool) fails a full attempt budget with negligible probability.
+DEFAULT_MAX_ATTEMPTS = 50
 
 
 class GenerationError(ValueError):
