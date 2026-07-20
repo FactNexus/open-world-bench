@@ -18,7 +18,7 @@ def test_domain_validate_json_output() -> None:
     payload = json.loads(result.output)
     assert payload["valid"] is True
     assert payload["id"] == "australian-tourism"
-    assert len(payload["templates"]) == 6
+    assert len(payload["templates"]) == 8
 
 
 def test_domain_validate_fails_with_nonzero_exit(tmp_path: Path) -> None:

@@ -1,0 +1,110 @@
+{
+  "answer_contract": {
+    "citations_required": true,
+    "format": "markdown",
+    "instructions": [
+      "Present the plan day by day, stating where each night is spent.",
+      "Give approximate driving distance or time for each leg, and distinguish confirmed details from estimates."
+    ]
+  },
+  "criteria": [
+    {
+      "description": "Daily driving legs must be realistic for the stated traveller, stops must appear in a geographically sensible order between the endpoints, and the whole route must be achievable in the stated number of days. A leg that requires an implausible day of driving, or a detour that contradicts the route direction without justification, is a violation.\n",
+      "dimension": "constraint_satisfaction",
+      "hard": true,
+      "id": "route-feasibility",
+      "title": "The route is drivable as planned",
+      "validator": null,
+      "weight": 2.0
+    },
+    {
+      "description": "The plan should say where each night is spent and choose intermediate stops that serve the route, with enough practical detail to act on.\n",
+      "dimension": "coverage",
+      "hard": false,
+      "id": "overnight-stops",
+      "title": "Overnight stops are planned, not just endpoints",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Recommended experiences should suit the stated interest and traveller profile, and should include stops along the way rather than only at the endpoints.\n",
+      "dimension": "coverage",
+      "hard": false,
+      "id": "interest-alignment",
+      "title": "Experiences along the route match the interest and traveller",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Claims about opening times, seasonal access, road conditions, and booking requirements should be supported by suitably fresh sources cited close to the relevant statements.\n",
+      "dimension": "citation_support",
+      "hard": false,
+      "id": "current-conditions",
+      "title": "Route and operating claims are supported by current sources",
+      "validator": null,
+      "weight": 1.0
+    }
+  ],
+  "domain_id": "australian-tourism",
+  "domain_version": "0.3.0",
+  "generated_at": "2026-07-20T04:57:47.671235Z",
+  "id": "australian-tourism.multi-stop-itinerary.000029",
+  "parameters": {
+    "interest": {
+      "id": "food-wine",
+      "label": "local food and wine"
+    },
+    "location_a": {
+      "coastal": 1,
+      "id": "brisbane",
+      "latitude": -27.4698,
+      "location_type": "city",
+      "longitude": 153.0251,
+      "name": "Brisbane",
+      "region": "Brisbane",
+      "remoteness": "metro",
+      "sampling_weight": 3,
+      "state_or_territory": "QLD"
+    },
+    "location_b": {
+      "coastal": 1,
+      "id": "newcastle",
+      "latitude": -32.9283,
+      "location_type": "city",
+      "longitude": 151.7817,
+      "name": "Newcastle",
+      "region": "Hunter",
+      "remoteness": "metro",
+      "sampling_weight": 2,
+      "state_or_territory": "NSW"
+    },
+    "traveller": {
+      "children": 2,
+      "description": "a family with two primary-school-aged children",
+      "id": "young-family",
+      "party_size": 4
+    },
+    "trip_days": 4
+  },
+  "prompt": "A family with two primary-school-aged children is planning a 4-day\nself-drive trip from Brisbane, QLD,\nto Newcastle, NSW. Their main\ninterest is local food and wine.\n\nPlan the route day by day, including where each night is spent. Keep daily\ndriving legs realistic for this traveller, and recommend experiences along\nthe way — not only at the endpoints — that suit the interest. Support\nmaterial factual claims with current citations, especially claims about\nopening times, seasonal access, road conditions, and booking requirements.\nState uncertainty where the evidence is incomplete.",
+  "schema_version": 1,
+  "seed": 10649106435141551288,
+  "source_hashes": {
+    "values/access-needs.yaml": "f6d93c94fad9f10eb34c806517cbf1a7def9b5ebb578b0987dccdf08fff63aed",
+    "values/constraints.yaml": "ca7b0dd198064463f45ff7ab2472e381b90231663689ce1718f472096bbfe498",
+    "values/essential-needs.yaml": "671309b511e05e07515db6d3a9c25d9f47558b4e6bbaf0749281a44274354ad7",
+    "values/interests.yaml": "40abf1269f66b94a910e8045bf14773b29148910f2701158d7767f827f1ad5ec",
+    "values/locations.csv": "71630af7f0d7f474a710689c4d050e845ec6f9445ac7f0011c170a3f5b6aa7ce",
+    "values/transport.yaml": "af44f0134fa4735f1a9f1045d12ef829d57630af8b6affd4b8363636a86c8c81",
+    "values/travellers.yaml": "8c89ba5296a6228ea94e30f9b0048ea380bd53ad887da751fa557d7e5a215832",
+    "values/weather.yaml": "3bd13d59b127f32fde6c9f792f4ac520727d3dbc289dc131404a0b8e039ebbb0"
+  },
+  "tags": [
+    "itinerary",
+    "multi-day",
+    "road-trip",
+    "routing"
+  ],
+  "template_id": "multi-stop-itinerary",
+  "template_version": "0.1.0"
+}

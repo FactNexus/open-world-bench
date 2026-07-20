@@ -38,7 +38,7 @@ def test_committed_instances_are_valid_unique_and_quota_matched() -> None:
     assert per_template == Counter(suite.scenario_generation.template_quotas)
     for instance in instances:
         assert "{{" not in instance.prompt
-        assert instance.domain_version == "0.2.0"
+        assert instance.domain_version == "0.3.0"
 
 
 def test_committed_instances_respect_template_rules() -> None:
@@ -50,8 +50,29 @@ def test_committed_instances_respect_template_rules() -> None:
             assert parameters["season"] in parameters["condition"]["seasons"], instance.id
         if instance.template_id == "compare-destinations":
             assert parameters["location_a"]["id"] != parameters["location_b"]["id"], instance.id
+        if instance.template_id == "multi-stop-itinerary":
+            start, end = parameters["location_a"], parameters["location_b"]
+            assert start["id"] != end["id"], instance.id
+            assert (start["state_or_territory"] == "TAS") == (
+                end["state_or_territory"] == "TAS"
+            ), instance.id
+            squared_km = ((start["latitude"] - end["latitude"]) * 111) ** 2 + (
+                (start["longitude"] - end["longitude"]) * 88
+            ) ** 2
+            assert 10_000 <= squared_km <= (parameters["trip_days"] * 200) ** 2, instance.id
+            if parameters["interest"]["id"] == "coast":
+                assert start["coastal"] == 1 or end["coastal"] == 1, instance.id
+        if instance.template_id == "everyday-essentials" and (
+            parameters["need"].get("requires_children") == 1
+        ):
+            assert parameters["traveller"]["children"] > 0, instance.id
         interest = parameters.get("interest")
-        if interest and interest["id"] == "coast":
+        coast_elsewhere = (
+            interest
+            and interest["id"] == "coast"
+            and instance.template_id != "multi-stop-itinerary"
+        )
+        if coast_elsewhere:
             for key in ("location", "location_a", "location_b"):
                 if key in parameters:
                     assert parameters[key]["coastal"] == 1, instance.id

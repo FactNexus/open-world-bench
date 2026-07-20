@@ -48,7 +48,7 @@ def errors(result_issues: list) -> list[str]:  # type: ignore[type-arg]
 def test_australian_tourism_pack_is_fully_valid() -> None:
     result = validate_domain_pack(DOMAIN_DIRECTORY)
     assert result.valid, [issue.as_dict() for issue in result.issues]
-    assert len(result.templates) == 6
+    assert len(result.templates) == 8
 
 
 def test_minimal_pack_is_valid(tmp_path: Path) -> None:

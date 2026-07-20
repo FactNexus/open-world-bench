@@ -19,3 +19,4 @@ dist/
 
 # Packaged snapshot of this repo
 open-world-research-benchmark.tar.gz
+*.iml

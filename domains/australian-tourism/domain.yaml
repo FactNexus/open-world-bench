@@ -4,7 +4,7 @@ name: Australian tourism
 description: >
   Open-world research and recommendation scenarios concerning travel and tourism
   within Australia.
-version: 0.2.0
+version: 0.3.0
 default_locale: en-AU
 default_timezone: Australia/Sydney
 templates:
@@ -45,6 +45,13 @@ parameters:
     provider:
       type: yaml_list
       path: values/weather.yaml
+  essential_need:
+    description: >-
+      Everyday non-tourism need (pharmacy, groceries, medical care) a traveller
+      must meet while away from home.
+    provider:
+      type: yaml_list
+      path: values/essential-needs.yaml
 source_policy: source-policy.yaml
 licence: MIT for authored templates; source datasets retain their own licences
 attribution: []

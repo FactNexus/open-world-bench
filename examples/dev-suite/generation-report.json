@@ -1,20 +1,23 @@
 {
   "requested": 100,
   "generated": 100,
-  "rule_rejections": 71,
+  "rule_rejections": 106,
   "duplicate_rejections": 0,
   "per_template": {
     "accessible-experiences": 15,
-    "compare-destinations": 15,
-    "constrained-day-plan": 20,
-    "nearby-discovery": 20,
-    "remote-area-plan": 15,
-    "season-adaptation": 15
+    "compare-destinations": 10,
+    "constrained-day-plan": 15,
+    "everyday-essentials": 10,
+    "multi-stop-itinerary": 15,
+    "nearby-discovery": 15,
+    "remote-area-plan": 10,
+    "season-adaptation": 10
   },
   "rejected_rules": {
-    "location.remoteness == 'remote'": 62,
-    "location_a.id != location_b.id": 2,
-    "not (interest.id == 'coast' and location.coastal == 0)": 3,
+    "((location_a.latitude - location_b.latitude) * 111) * ((location_a.latitude - location_b.latitude) * 111) + ((location_a.longitude - location_b.longitude) * 88) * ((location_a.longitude - location_b.longitude) * 88) <= (trip_days * 200) * (trip_days * 200)": 31,
+    "(location_a.state_or_territory == 'TAS') == (location_b.state_or_territory == 'TAS')": 11,
+    "location.remoteness == 'remote'": 59,
+    "not (interest.id == 'coast' and location.coastal == 0)": 1,
     "season in condition.seasons": 4
   }
 }

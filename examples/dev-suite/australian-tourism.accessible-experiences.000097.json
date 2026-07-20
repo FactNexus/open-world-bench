@@ -1,0 +1,105 @@
+{
+  "answer_contract": {
+    "citations_required": true,
+    "format": "markdown",
+    "instructions": [
+      "Give a direct answer rather than describing a research process.",
+      "Never present an option as accessible without explicit supporting evidence."
+    ]
+  },
+  "criteria": [
+    {
+      "description": "Each recommended experience must be supported by explicit, current evidence that it meets the stated accessibility requirement. A recommendation presented as accessible without such evidence is a violation.\n",
+      "dimension": "constraint_satisfaction",
+      "hard": true,
+      "id": "access-evidence",
+      "title": "Every recommendation has explicit accessibility evidence",
+      "validator": null,
+      "weight": 2.0
+    },
+    {
+      "description": "The answer should provide the requested number of qualifying recommendations, or clearly explain why fewer qualified.\n",
+      "dimension": "constraint_satisfaction",
+      "hard": false,
+      "id": "requested-count",
+      "title": "Provides the requested number of recommendations",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Operator or authority pages are suitable evidence for accessibility; user reviews alone are not sufficient for access claims.\n",
+      "dimension": "source_quality_freshness",
+      "hard": false,
+      "id": "source-suitability",
+      "title": "Accessibility claims cite suitable sources",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Where the requirement makes arrival practicalities important, the answer should address them rather than only naming venues.\n",
+      "dimension": "coverage",
+      "hard": false,
+      "id": "practical-detail",
+      "title": "Practical arrival and entry details are addressed",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "The answer should distinguish confirmed accessibility from claims that need direct confirmation with the operator.\n",
+      "dimension": "clarity",
+      "hard": false,
+      "id": "uncertainty",
+      "title": "Unverifiable accessibility is flagged",
+      "validator": null,
+      "weight": 1.0
+    }
+  ],
+  "domain_id": "australian-tourism",
+  "domain_version": "0.3.0",
+  "generated_at": "2026-07-20T04:57:47.734527Z",
+  "id": "australian-tourism.accessible-experiences.000097",
+  "parameters": {
+    "access_need": {
+      "description": "no more than about 500 metres of walking, with seating available along the way",
+      "id": "limited-walking"
+    },
+    "interest": {
+      "id": "indigenous-culture",
+      "label": "Aboriginal and Torres Strait Islander cultural experiences"
+    },
+    "location": {
+      "coastal": 0,
+      "id": "bathurst",
+      "latitude": -33.4193,
+      "location_type": "city",
+      "longitude": 149.5775,
+      "name": "Bathurst",
+      "region": "Central West",
+      "remoteness": "regional",
+      "sampling_weight": 1,
+      "state_or_territory": "NSW"
+    },
+    "max_distance_km": 50,
+    "recommendation_count": 3
+  },
+  "prompt": "A visitor to Bathurst, NSW, needs\nno more than about 500 metres of walking, with seating available along the way. They are interested in Aboriginal and Torres Strait Islander cultural experiences.\n\nRecommend 3 experiences within approximately\n50 km that meet this requirement. For every\nrecommendation, the accessibility claim must rest on explicit, current\nevidence such as the operator's own accessibility information — do not\nassume access from general descriptions. If evidence for a promising option\ncannot be found, say so rather than presenting it as accessible.\n\nInclude practical arrival details (parking or transport, entry) where the\nrequirement makes them important, cite sources close to the claims they\nsupport, and flag anything that should be confirmed directly with the\noperator.",
+  "schema_version": 1,
+  "seed": 4907065714583758068,
+  "source_hashes": {
+    "values/access-needs.yaml": "f6d93c94fad9f10eb34c806517cbf1a7def9b5ebb578b0987dccdf08fff63aed",
+    "values/constraints.yaml": "ca7b0dd198064463f45ff7ab2472e381b90231663689ce1718f472096bbfe498",
+    "values/essential-needs.yaml": "671309b511e05e07515db6d3a9c25d9f47558b4e6bbaf0749281a44274354ad7",
+    "values/interests.yaml": "40abf1269f66b94a910e8045bf14773b29148910f2701158d7767f827f1ad5ec",
+    "values/locations.csv": "71630af7f0d7f474a710689c4d050e845ec6f9445ac7f0011c170a3f5b6aa7ce",
+    "values/transport.yaml": "af44f0134fa4735f1a9f1045d12ef829d57630af8b6affd4b8363636a86c8c81",
+    "values/travellers.yaml": "8c89ba5296a6228ea94e30f9b0048ea380bd53ad887da751fa557d7e5a215832",
+    "values/weather.yaml": "3bd13d59b127f32fde6c9f792f4ac520727d3dbc289dc131404a0b8e039ebbb0"
+  },
+  "tags": [
+    "accessibility",
+    "recommendations",
+    "evidence"
+  ],
+  "template_id": "accessible-experiences",
+  "template_version": "0.1.0"
+}

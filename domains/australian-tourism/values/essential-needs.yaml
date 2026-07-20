@@ -1,0 +1,29 @@
+# Everyday, non-tourism needs travellers still have while away from home.
+# These deliberately test coverage of ordinary local services (pharmacies,
+# supermarkets, medical care) that tourism-focused sources often omit.
+# `requires_children` marks needs that only make sense for a party with
+# children; a template compatibility rule enforces the pairing.
+- id: after-hours-pharmacy
+  description: >-
+    they need a pharmacy open this evening for urgent over-the-counter
+    medication
+- id: prescription-refill
+  description: >-
+    one of them needs a regular prescription medicine dispensed while away
+    from home
+- id: dietary-groceries
+  description: >-
+    they need to buy groceries for a strict gluten-free (coeliac-safe) diet
+- id: child-supplies
+  description: >-
+    they need children's medicine and other supplies for an unwell child
+    this evening
+  requires_children: 1
+- id: minor-medical
+  description: >-
+    one of them needs a same-day GP or urgent-care appointment for a minor,
+    non-emergency health issue
+- id: holiday-groceries
+  description: >-
+    they need basic groceries, and it is a Sunday or public holiday when
+    many shops keep reduced hours

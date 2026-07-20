@@ -41,8 +41,9 @@ Implemented so far (Milestones 0 and 1 of SPEC.md §26):
   frontier, offline static HTML reports, and CSV/JSON exports.
 
 This completes the SPEC.md §27 MVP command surface, plus the Milestone 5 baseline
-release content: a 76-location snapshot with provenance metadata, six scenario
-templates (including accessibility, season-adaptation, and remote-area planning),
+release content: a 76-location snapshot with provenance metadata, eight scenario
+templates (including accessibility, season adaptation, remote-area planning,
+multi-day multi-stop itineraries, and everyday non-tourism essentials),
 the public 100-instance development suite in [`examples/dev-suite/`](examples/dev-suite)
 (regenerates byte-identically from [`suites/australian-tourism-dev.yaml`](suites/australian-tourism-dev.yaml),
 enforced by CI), a ready-to-run baseline system configuration, and a

@@ -12,12 +12,14 @@ scenario_generation:
   seed: 20260718
   count: 100
   template_quotas:
-    nearby-discovery: 20
-    constrained-day-plan: 20
-    compare-destinations: 15
+    nearby-discovery: 15
+    constrained-day-plan: 15
+    compare-destinations: 10
     accessible-experiences: 15
-    season-adaptation: 15
-    remote-area-plan: 15
+    season-adaptation: 10
+    remote-area-plan: 10
+    multi-stop-itinerary: 15
+    everyday-essentials: 10
 systems:
   - systems/baseline-anthropic.yaml
 repetitions: 1

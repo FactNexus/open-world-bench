@@ -1,0 +1,79 @@
+schema_version: 1
+id: everyday-essentials
+name: Everyday essentials while travelling
+version: 0.1.0
+description: >
+  A traveller needs an ordinary local service — a pharmacy, groceries,
+  medical care — that is not tourism content but that travellers depend on.
+  Tests whether a system covers everyday services in a place, not just
+  attractions.
+prompt: |
+  {{ traveller.description | capitalize }} is partway through a stay in
+  {{ location.name }}, {{ location.state_or_territory }}, and
+  {{ need.description }}.
+
+  Recommend specifically where they should go or what they should do,
+  with enough practical detail to act on today: names, locations relative
+  to the town or city centre, and current opening information. If the need
+  cannot be met locally, say so clearly and give the most practical real
+  alternative — the nearest place that can meet it, or a delivery,
+  telehealth, or equivalent fallback. Support factual claims about
+  businesses, services, and opening hours with current citations, and state
+  uncertainty where the evidence is incomplete or stale.
+parameters:
+  location:
+    source: location
+  traveller:
+    source: traveller
+  need:
+    source: essential_need
+rules:
+  # Child-specific needs only arise for a party travelling with children.
+  - "not (need.requires_children == 1 and traveller.children == 0)"
+criteria:
+  - id: verifiable-details
+    dimension: factual_consistency
+    title: Named services exist and details are supported
+    description: >
+      Every named business or service must actually exist, and stated
+      details — location, services offered, opening hours — must be
+      supported by the cited evidence. A fabricated or defunct business,
+      or invented opening hours, is a violation.
+    hard: true
+    weight: 2.0
+  - id: practical-access
+    dimension: constraint_satisfaction
+    title: Recommendations are reachable for this traveller
+    description: >
+      Recommendations should be practically reachable given the traveller's
+      situation — in particular, without a private car where the traveller
+      has none — with distances or transport options stated.
+  - id: need-coverage
+    dimension: coverage
+    title: The specific need is addressed
+    description: >
+      The answer should address the specific need, including its specifics
+      (dietary safety, medication access, timing), rather than generic
+      shopping or services information.
+  - id: availability-honesty
+    dimension: clarity
+    title: Local unavailability is acknowledged with a real fallback
+    description: >
+      Where the need cannot be met in the location — common in small or
+      remote places — the answer should say so plainly and give a genuine,
+      current alternative rather than forcing an unsuitable local option.
+  - id: citation-freshness
+    dimension: citation_support
+    title: Service details are supported by current sources
+    description: >
+      Opening hours and service claims change often; they should be
+      supported by suitably fresh sources cited close to the relevant
+      statements.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Lead with the single best recommendation, then alternatives.
+    - State opening information and how to get there for each option.
+tags: [everyday-services, pharmacy, groceries, medical, practical]
+difficulty: medium

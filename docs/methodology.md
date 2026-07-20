@@ -27,12 +27,18 @@ is the question and the experimental conditions, not the knowledge.
 
 ## Scenario generation
 
-Scenarios are generated from the `australian-tourism` domain pack (v0.2.0):
-six templates (nearby discovery, constrained day plan, destination
+Scenarios are generated from the `australian-tourism` domain pack (v0.3.0):
+eight templates (nearby discovery, constrained day plan, destination
 comparison, accessibility-aware recommendation, weather/season adaptation,
-remote-area planning), a 76-location snapshot, and value lists for
-travellers, interests, constraints, access needs, transport situations, and
-forecast conditions.
+remote-area planning, multi-day multi-stop itineraries, and everyday
+essentials), a 76-location snapshot, and value lists for travellers,
+interests, constraints, access needs, transport situations, forecast
+conditions, and everyday non-tourism needs (pharmacies, groceries, medical
+care). The everyday-essentials family deliberately probes services that are
+not tourism content but that travellers depend on; the multi-stop family
+requires route-level synthesis across several locations, with endpoint
+pairs constrained to a drivable straight-line distance band for the trip
+length.
 
 Generation is deterministic. Each attempt seed derives from
 `sha256(suite_seed:template_id:index:attempt)`, so the same seed and pack

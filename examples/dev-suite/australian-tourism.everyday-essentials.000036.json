@@ -1,0 +1,107 @@
+{
+  "answer_contract": {
+    "citations_required": true,
+    "format": "markdown",
+    "instructions": [
+      "Lead with the single best recommendation, then alternatives.",
+      "State opening information and how to get there for each option."
+    ]
+  },
+  "criteria": [
+    {
+      "description": "Every named business or service must actually exist, and stated details — location, services offered, opening hours — must be supported by the cited evidence. A fabricated or defunct business, or invented opening hours, is a violation.\n",
+      "dimension": "factual_consistency",
+      "hard": true,
+      "id": "verifiable-details",
+      "title": "Named services exist and details are supported",
+      "validator": null,
+      "weight": 2.0
+    },
+    {
+      "description": "Recommendations should be practically reachable given the traveller's situation — in particular, without a private car where the traveller has none — with distances or transport options stated.\n",
+      "dimension": "constraint_satisfaction",
+      "hard": false,
+      "id": "practical-access",
+      "title": "Recommendations are reachable for this traveller",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "The answer should address the specific need, including its specifics (dietary safety, medication access, timing), rather than generic shopping or services information.\n",
+      "dimension": "coverage",
+      "hard": false,
+      "id": "need-coverage",
+      "title": "The specific need is addressed",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Where the need cannot be met in the location — common in small or remote places — the answer should say so plainly and give a genuine, current alternative rather than forcing an unsuitable local option.\n",
+      "dimension": "clarity",
+      "hard": false,
+      "id": "availability-honesty",
+      "title": "Local unavailability is acknowledged with a real fallback",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Opening hours and service claims change often; they should be supported by suitably fresh sources cited close to the relevant statements.\n",
+      "dimension": "citation_support",
+      "hard": false,
+      "id": "citation-freshness",
+      "title": "Service details are supported by current sources",
+      "validator": null,
+      "weight": 1.0
+    }
+  ],
+  "domain_id": "australian-tourism",
+  "domain_version": "0.3.0",
+  "generated_at": "2026-07-20T04:57:47.677018Z",
+  "id": "australian-tourism.everyday-essentials.000036",
+  "parameters": {
+    "location": {
+      "coastal": 1,
+      "id": "mount-gambier",
+      "latitude": -37.829,
+      "location_type": "city",
+      "longitude": 140.782,
+      "name": "Mount Gambier",
+      "region": "Limestone Coast",
+      "remoteness": "regional",
+      "sampling_weight": 1,
+      "state_or_territory": "SA"
+    },
+    "need": {
+      "description": "one of them needs a same-day GP or urgent-care appointment for a minor, non-emergency health issue",
+      "id": "minor-medical"
+    },
+    "traveller": {
+      "children": 0,
+      "description": "a solo traveller without access to a private car",
+      "id": "solo-no-car",
+      "party_size": 1
+    }
+  },
+  "prompt": "A solo traveller without access to a private car is partway through a stay in\nMount Gambier, SA, and\none of them needs a same-day GP or urgent-care appointment for a minor, non-emergency health issue.\n\nRecommend specifically where they should go or what they should do,\nwith enough practical detail to act on today: names, locations relative\nto the town or city centre, and current opening information. If the need\ncannot be met locally, say so clearly and give the most practical real\nalternative — the nearest place that can meet it, or a delivery,\ntelehealth, or equivalent fallback. Support factual claims about\nbusinesses, services, and opening hours with current citations, and state\nuncertainty where the evidence is incomplete or stale.",
+  "schema_version": 1,
+  "seed": 246355692339968091,
+  "source_hashes": {
+    "values/access-needs.yaml": "f6d93c94fad9f10eb34c806517cbf1a7def9b5ebb578b0987dccdf08fff63aed",
+    "values/constraints.yaml": "ca7b0dd198064463f45ff7ab2472e381b90231663689ce1718f472096bbfe498",
+    "values/essential-needs.yaml": "671309b511e05e07515db6d3a9c25d9f47558b4e6bbaf0749281a44274354ad7",
+    "values/interests.yaml": "40abf1269f66b94a910e8045bf14773b29148910f2701158d7767f827f1ad5ec",
+    "values/locations.csv": "71630af7f0d7f474a710689c4d050e845ec6f9445ac7f0011c170a3f5b6aa7ce",
+    "values/transport.yaml": "af44f0134fa4735f1a9f1045d12ef829d57630af8b6affd4b8363636a86c8c81",
+    "values/travellers.yaml": "8c89ba5296a6228ea94e30f9b0048ea380bd53ad887da751fa557d7e5a215832",
+    "values/weather.yaml": "3bd13d59b127f32fde6c9f792f4ac520727d3dbc289dc131404a0b8e039ebbb0"
+  },
+  "tags": [
+    "everyday-services",
+    "pharmacy",
+    "groceries",
+    "medical",
+    "practical"
+  ],
+  "template_id": "everyday-essentials",
+  "template_version": "0.1.0"
+}

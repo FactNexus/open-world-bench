@@ -46,8 +46,8 @@
     }
   ],
   "domain_id": "australian-tourism",
-  "domain_version": "0.2.0",
-  "generated_at": "2026-07-19T23:28:47.612690Z",
+  "domain_version": "0.3.0",
+  "generated_at": "2026-07-20T04:57:47.711271Z",
   "id": "australian-tourism.remote-area-plan.000071",
   "parameters": {
     "location": {
@@ -80,6 +80,7 @@
   "source_hashes": {
     "values/access-needs.yaml": "f6d93c94fad9f10eb34c806517cbf1a7def9b5ebb578b0987dccdf08fff63aed",
     "values/constraints.yaml": "ca7b0dd198064463f45ff7ab2472e381b90231663689ce1718f472096bbfe498",
+    "values/essential-needs.yaml": "671309b511e05e07515db6d3a9c25d9f47558b4e6bbaf0749281a44274354ad7",
     "values/interests.yaml": "40abf1269f66b94a910e8045bf14773b29148910f2701158d7767f827f1ad5ec",
     "values/locations.csv": "71630af7f0d7f474a710689c4d050e845ec6f9445ac7f0011c170a3f5b6aa7ce",
     "values/transport.yaml": "af44f0134fa4735f1a9f1045d12ef829d57630af8b6affd4b8363636a86c8c81",

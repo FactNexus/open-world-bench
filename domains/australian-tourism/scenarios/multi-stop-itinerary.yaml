@@ -1,0 +1,97 @@
+schema_version: 1
+id: multi-stop-itinerary
+name: Multi-day multi-stop itinerary
+version: 0.1.0
+description: >
+  Plan a multi-day self-drive trip between two Australian destinations with
+  overnight stops, testing route-level synthesis across several locations
+  rather than a single-place lookup.
+prompt: |
+  {{ traveller.description | capitalize }} is planning a {{ trip_days }}-day
+  self-drive trip from {{ location_a.name }}, {{ location_a.state_or_territory }},
+  to {{ location_b.name }}, {{ location_b.state_or_territory }}. Their main
+  interest is {{ interest.label }}.
+
+  Plan the route day by day, including where each night is spent. Keep daily
+  driving legs realistic for this traveller, and recommend experiences along
+  the way — not only at the endpoints — that suit the interest. Support
+  material factual claims with current citations, especially claims about
+  opening times, seasonal access, road conditions, and booking requirements.
+  State uncertainty where the evidence is incomplete.
+parameters:
+  location_a:
+    source: location
+  location_b:
+    source: location
+  traveller:
+    source: traveller
+  interest:
+    source: interest
+  trip_days:
+    provider:
+      type: values
+      values: [3, 4, 5]
+rules:
+  - "location_a.id != location_b.id"
+  # Both endpoints on the same landmass: never pair Tasmania with the mainland.
+  - "(location_a.state_or_territory == 'TAS') == (location_b.state_or_territory == 'TAS')"
+  # Straight-line distance band via a squared equirectangular approximation
+  # (1 degree latitude ~ 111 km, 1 degree longitude ~ 88 km at Australian
+  # latitudes): at least 100 km apart so the trip is genuinely multi-location,
+  # and at most ~200 km per day straight-line so the route is drivable in the
+  # allotted days.
+  - >-
+    ((location_a.latitude - location_b.latitude) * 111)
+    * ((location_a.latitude - location_b.latitude) * 111)
+    + ((location_a.longitude - location_b.longitude) * 88)
+    * ((location_a.longitude - location_b.longitude) * 88)
+    >= 10000
+  - >-
+    ((location_a.latitude - location_b.latitude) * 111)
+    * ((location_a.latitude - location_b.latitude) * 111)
+    + ((location_a.longitude - location_b.longitude) * 88)
+    * ((location_a.longitude - location_b.longitude) * 88)
+    <= (trip_days * 200) * (trip_days * 200)
+  # A coastal-scenery trip needs at least one coastal endpoint.
+  - "not (interest.id == 'coast' and (location_a.coastal == 0 and location_b.coastal == 0))"
+criteria:
+  - id: route-feasibility
+    dimension: constraint_satisfaction
+    title: The route is drivable as planned
+    description: >
+      Daily driving legs must be realistic for the stated traveller, stops
+      must appear in a geographically sensible order between the endpoints,
+      and the whole route must be achievable in the stated number of days.
+      A leg that requires an implausible day of driving, or a detour that
+      contradicts the route direction without justification, is a violation.
+    hard: true
+    weight: 2.0
+  - id: overnight-stops
+    dimension: coverage
+    title: Overnight stops are planned, not just endpoints
+    description: >
+      The plan should say where each night is spent and choose intermediate
+      stops that serve the route, with enough practical detail to act on.
+  - id: interest-alignment
+    dimension: coverage
+    title: Experiences along the route match the interest and traveller
+    description: >
+      Recommended experiences should suit the stated interest and traveller
+      profile, and should include stops along the way rather than only at
+      the endpoints.
+  - id: current-conditions
+    dimension: citation_support
+    title: Route and operating claims are supported by current sources
+    description: >
+      Claims about opening times, seasonal access, road conditions, and
+      booking requirements should be supported by suitably fresh sources
+      cited close to the relevant statements.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Present the plan day by day, stating where each night is spent.
+    - Give approximate driving distance or time for each leg, and distinguish
+      confirmed details from estimates.
+tags: [itinerary, multi-day, road-trip, routing]
+difficulty: hard

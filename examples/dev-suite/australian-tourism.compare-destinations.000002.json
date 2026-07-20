@@ -46,8 +46,8 @@
     }
   ],
   "domain_id": "australian-tourism",
-  "domain_version": "0.2.0",
-  "generated_at": "2026-07-19T23:28:47.538558Z",
+  "domain_version": "0.3.0",
+  "generated_at": "2026-07-20T04:57:47.642249Z",
   "id": "australian-tourism.compare-destinations.000002",
   "parameters": {
     "constraint": {

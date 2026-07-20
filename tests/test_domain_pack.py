@@ -22,4 +22,6 @@ def test_australian_tourism_templates_are_valid() -> None:
         "accessible-experiences",
         "season-adaptation",
         "remote-area-plan",
+        "multi-stop-itinerary",
+        "everyday-essentials",
     }

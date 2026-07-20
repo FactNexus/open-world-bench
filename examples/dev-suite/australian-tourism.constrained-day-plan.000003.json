@@ -46,8 +46,8 @@
     }
   ],
   "domain_id": "australian-tourism",
-  "domain_version": "0.2.0",
-  "generated_at": "2026-07-19T23:28:47.539449Z",
+  "domain_version": "0.3.0",
+  "generated_at": "2026-07-20T04:57:47.643284Z",
   "id": "australian-tourism.constrained-day-plan.000003",
   "parameters": {
     "activity_count": 3,
