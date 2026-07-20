@@ -20,8 +20,11 @@ scenario_generation:
     remote-area-plan: 10
     multi-stop-itinerary: 15
     everyday-essentials: 10
+# Default candidate goes through OpenRouter so one OPENROUTER_API_KEY covers
+# both candidate and judge; systems/baseline-anthropic.yaml is the
+# provider-direct example if you prefer an Anthropic key.
 systems:
-  - systems/baseline-anthropic.yaml
+  - systems/baseline-openrouter.yaml
 repetitions: 1
 randomise_system_order: true
 concurrency: 2
@@ -36,9 +39,11 @@ evaluation:
     clarity: 5
   hard_constraint_score_cap: 49
   evidence_cache: true
+  # Judge via OpenRouter by default; adapters anthropic/openai/openai_compatible
+  # work here too (api_key_env and base_url override the defaults).
   judge:
-    adapter: anthropic
-    model: claude-opus-4-8
+    adapter: openrouter
+    model: anthropic/claude-opus-4.8
 reporting:
   static_html: true
   export_json: true

@@ -30,6 +30,10 @@ def create_adapter(system: SystemDefinition) -> SystemAdapter:
         from owrb.adapters.openai_api import OpenAiAdapter
 
         return OpenAiAdapter()
+    if adapter_name in ("openrouter", "openai_compatible"):
+        from owrb.adapters.openai_compatible import OpenAiCompatibleAdapter
+
+        return OpenAiCompatibleAdapter(flavour=adapter_name)
     if adapter_name == "manual_import":
         raise AdapterError(
             f"system {system.id!r} uses manual_import; results are supplied with "

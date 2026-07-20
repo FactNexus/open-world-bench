@@ -101,9 +101,11 @@ Evaluation is mixed (SPEC.md §16):
 
 The judge is blind to candidate identity: prompts contain the scenario,
 answer, citations, and evidence — never the system name. The baseline
-configuration uses one judge model (`claude-opus-4-8`), deliberately a
-different model family tier from the baseline candidate; SPEC.md §16.7's
-panel, self-consistency, and pairwise extensions remain future work.
+configuration uses one judge model (Claude Opus via OpenRouter),
+deliberately a different model tier from the baseline candidate; the judge
+adapter also supports provider-direct Anthropic/OpenAI access and any
+OpenAI-compatible gateway. SPEC.md §16.7's panel, self-consistency, and
+pairwise extensions remain future work.
 
 Confirmed hard-constraint violations (an inaccessible recommendation where
 access was mandatory, an infeasible plan for the stated transport) cap the
@@ -147,9 +149,11 @@ prefer re-running all systems together.
   citation precision. Systems citing paywalled authorities are somewhat
   disadvantaged.
 - **Efficiency telemetry is uneven.** Token and cost metrics depend on what
-  providers expose; search-request fees (as opposed to token costs) are not
-  included in computed `cost_usd`. Efficiency comparisons are strongest
-  within a provider and indicative across providers.
+  providers expose. Where the gateway reports an actual charge (OpenRouter
+  does), `cost_usd` uses it; where cost is computed from configured token
+  rates (provider-direct adapters), search-request fees are not included.
+  Efficiency comparisons are strongest within a provider and indicative
+  across providers.
 - **Deterministic count checks are heuristic.** Recommendation counting
   parses markdown structure and carries reduced confidence; the rubric
   judge re-checks the criterion when configured.

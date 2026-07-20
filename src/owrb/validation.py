@@ -32,6 +32,8 @@ KNOWN_ADAPTERS = frozenset(
         "openai",
         "anthropic",
         "google",
+        "openrouter",
+        "openai_compatible",
     }
 )
 

@@ -1,0 +1,38 @@
+# Template: adapt the OpenAI-compatible chat-completions adapter to any
+# gateway that speaks the format (Together, Fireworks, LiteLLM, vLLM, a
+# corporate proxy, ...). Copy this file, then:
+#
+#   1. set settings.base_url to the gateway's API root (the adapter appends
+#      /chat/completions);
+#   2. name the key variable in environment.api_key — always an environment
+#      variable REFERENCE, never the secret itself;
+#   3. put gateway-specific request fields (search options, routing hints)
+#      in settings.extra_body — it is merged verbatim into the request body;
+#   4. configure settings.cost rates if the gateway does not report cost in
+#      its usage payload (OpenRouter does; most others do not).
+#
+# For OpenRouter itself, use `adapter: openrouter` instead (see
+# baseline-openrouter.yaml): it fills in the base URL, key variable, web
+# plugin, and reported-cost handling for you.
+schema_version: 1
+id: my-openai-compatible-system
+name: Example OpenAI-compatible system
+adapter: openai_compatible
+model: replace-me/some-model
+capabilities:
+  web_search: false
+  citations: false
+  token_metrics: true
+  cost_metrics: false
+settings:
+  base_url: https://gateway.example.com/v1
+  max_tokens: 4096
+  # extra_body:
+  #   my_gateway_search: {enabled: true}
+  # extra_headers:
+  #   X-Title: OWRB benchmark run     # attribution only — never secrets
+  # cost:
+  #   input_per_mtok: 1.0
+  #   output_per_mtok: 3.0
+environment:
+  api_key: MY_GATEWAY_API_KEY

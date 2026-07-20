@@ -28,9 +28,13 @@ Implemented so far (Milestones 0 and 1 of SPEC.md §26):
   safe compatibility rules, rejection sampling, and duplicate detection;
 - the async run harness: suite execution with per-instance randomised system order,
   concurrency limits, per-trial timeouts, and preserved failures/timeouts;
-- adapters: `generic_http`, `command`, `manual_import` (via `owrb import`), and
+- adapters: `generic_http`, `command`, `manual_import` (via `owrb import`),
   provider adapters for Anthropic (Messages API) and OpenAI (Responses API) with
-  native web search and normalised citations/metrics/trace;
+  native web search, and an OpenAI-compatible chat-completions adapter —
+  `openrouter` (the default path: one key, hundreds of models, web plugin,
+  reported actual cost) and `openai_compatible` (the same code pointed at any
+  other gateway via `base_url`/`extra_body`;
+  see [`systems/openai-compatible.template.yaml`](systems/openai-compatible.template.yaml));
 - evidence and evaluation: SSRF-guarded, cached, polite evidence retrieval; a shared
   per-scenario evidence bundle; deterministic checks; claim decomposition and
   citation-support verdicts; blind rubric judging; dimension weighting with
@@ -46,16 +50,22 @@ templates (including accessibility, season adaptation, remote-area planning,
 multi-day multi-stop itineraries, and everyday non-tourism essentials),
 the public 100-instance development suite in [`examples/dev-suite/`](examples/dev-suite)
 (regenerates byte-identically from [`suites/australian-tourism-dev.yaml`](suites/australian-tourism-dev.yaml),
-enforced by CI), a ready-to-run baseline system configuration, and a
-[methodology and limitations document](docs/methodology.md). Baseline runs
-require provider API keys:
+enforced by CI), ready-to-run baseline system configurations, and a
+[methodology and limitations document](docs/methodology.md). The default
+candidate and judge both go through OpenRouter, so one key runs the baseline:
 
 ```bash
-export ANTHROPIC_API_KEY=...   # candidate (claude-sonnet-4-6 + web search) and judge (claude-opus-4-8)
+export OPENROUTER_API_KEY=...  # candidate (Sonnet + web plugin) and judge (Opus)
 owrb run --suite suites/australian-tourism-dev.yaml
 owrb evaluate --run-set runs/<id>
 owrb report --run-set runs/<id>
 ```
+
+To go provider-direct instead, point the suite at
+[`systems/baseline-anthropic.yaml`](systems/baseline-anthropic.yaml)
+(`ANTHROPIC_API_KEY`), or adapt
+[`systems/openai-compatible.template.yaml`](systems/openai-compatible.template.yaml)
+to any other OpenAI-compatible gateway.
 
 ## Core workflow
 

@@ -12,6 +12,7 @@ from owrb.adapters.base import build_input_text
 from owrb.adapters.command import CommandAdapter
 from owrb.adapters.generic_http import GenericHttpAdapter, resolve_json_path
 from owrb.adapters.openai_api import OpenAiAdapter
+from owrb.adapters.openai_compatible import OpenAiCompatibleAdapter
 from owrb.models import RunRequest
 
 ECHO_COMMAND = [
@@ -248,6 +249,132 @@ def test_openai_adapter_parses_responses_output(monkeypatch: pytest.MonkeyPatch)
     assert "openai-secret" not in result.model_dump_json()
 
 
+def test_openrouter_adapter_parses_annotations_and_reported_cost(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-secret")
+    captured: dict = {}
+
+    def handler(http_request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(http_request.url)
+        captured["auth"] = http_request.headers.get("authorization")
+        captured["body"] = json.loads(http_request.content)
+        return httpx.Response(
+            200,
+            json={
+                "id": "gen-01",
+                "model": "anthropic/claude-sonnet-4.6",
+                "provider": "Anthropic",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "role": "assistant",
+                            "content": "Red is a warm colour.",
+                            "annotations": [
+                                {
+                                    "type": "url_citation",
+                                    "url_citation": {
+                                        "url": "https://example.com/colours",
+                                        "title": "Colour theory",
+                                        "content": "red is warm",
+                                    },
+                                }
+                            ],
+                        },
+                    }
+                ],
+                "usage": {"prompt_tokens": 100, "completion_tokens": 40, "cost": 0.0012},
+            },
+        )
+
+    adapter = OpenAiCompatibleAdapter(flavour="openrouter")
+    adapter.transport = httpx.MockTransport(handler)
+    request = make_request(
+        {
+            "adapter": "openrouter",
+            "model": "anthropic/claude-sonnet-4.6",
+            "settings": {"search_enabled": True, "max_searches": 5},
+            "environment": {},
+        }
+    )
+    result = asyncio.run(adapter.run(request))
+    assert captured["url"] == "https://openrouter.ai/api/v1/chat/completions"
+    assert captured["auth"] == "Bearer openrouter-secret"
+    assert captured["body"]["plugins"] == [{"id": "web", "max_results": 5}]
+    assert captured["body"]["usage"] == {"include": True}
+    assert result.answer == "Red is a warm colour."
+    assert result.citations[0].url == "https://example.com/colours"
+    assert result.citations[0].answer_spans == ["red is warm"]
+    assert result.metrics.input_tokens == 100
+    assert result.metrics.cost_usd == pytest.approx(0.0012)
+    assert result.provider_metadata["provider"] == "Anthropic"
+    assert "openrouter-secret" not in result.model_dump_json()
+
+
+def test_openai_compatible_adapter_requires_base_url_and_key_reference(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("MY_GATEWAY_API_KEY", "gateway-secret")
+    request = make_request(
+        {"adapter": "openai_compatible", "model": "m", "environment": {}}
+    )
+    with pytest.raises(AdapterError, match="environment.api_key"):
+        asyncio.run(OpenAiCompatibleAdapter().run(request))
+
+    request = make_request(
+        {
+            "adapter": "openai_compatible",
+            "model": "m",
+            "environment": {"api_key": "MY_GATEWAY_API_KEY"},
+        }
+    )
+    with pytest.raises(AdapterError, match="base_url"):
+        asyncio.run(OpenAiCompatibleAdapter().run(request))
+
+
+def test_openai_compatible_adapter_merges_extra_body_and_fallback_cost(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("MY_GATEWAY_API_KEY", "gateway-secret")
+    captured: dict = {}
+
+    def handler(http_request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(http_request.url)
+        captured["body"] = json.loads(http_request.content)
+        return httpx.Response(
+            200,
+            json={
+                "id": "cmpl-01",
+                "choices": [
+                    {"finish_reason": "stop", "message": {"content": "An answer."}}
+                ],
+                "usage": {"prompt_tokens": 1000, "completion_tokens": 1000},
+            },
+        )
+
+    adapter = OpenAiCompatibleAdapter()
+    adapter.transport = httpx.MockTransport(handler)
+    request = make_request(
+        {
+            "adapter": "openai_compatible",
+            "model": "m",
+            "settings": {
+                "base_url": "https://gateway.example.com/v1",
+                "extra_body": {"my_gateway_search": {"enabled": True}},
+                "cost": {"input_per_mtok": 1.0, "output_per_mtok": 3.0},
+            },
+            "environment": {"api_key": "MY_GATEWAY_API_KEY"},
+        }
+    )
+    result = asyncio.run(adapter.run(request))
+    assert captured["url"] == "https://gateway.example.com/v1/chat/completions"
+    assert captured["body"]["my_gateway_search"] == {"enabled": True}
+    assert "plugins" not in captured["body"]
+    assert "usage" not in captured["body"]
+    assert result.metrics.cost_usd == pytest.approx(0.004)
+
+
 def test_create_adapter_registry() -> None:
     assert isinstance(create_adapter(make_system(adapter="command")), CommandAdapter)
     assert isinstance(create_adapter(make_system(adapter="generic_http")), GenericHttpAdapter)
@@ -258,6 +385,12 @@ def test_create_adapter_registry() -> None:
     assert isinstance(
         create_adapter(make_system(adapter="provider_specific", provider="openai")),
         OpenAiAdapter,
+    )
+    assert isinstance(
+        create_adapter(make_system(adapter="openrouter")), OpenAiCompatibleAdapter
+    )
+    assert isinstance(
+        create_adapter(make_system(adapter="openai_compatible")), OpenAiCompatibleAdapter
     )
     with pytest.raises(AdapterError, match="manual_import"):
         create_adapter(make_system(adapter="manual_import"))

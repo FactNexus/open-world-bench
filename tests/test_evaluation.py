@@ -312,6 +312,44 @@ def test_create_judge_handles_unconfigured_placeholders() -> None:
     assert create_judge(JudgeConfig(adapter="configurable", model="replace-me")) is None
     assert create_judge(JudgeConfig(adapter="anthropic", model="claude-fable-5")) is not None
     assert create_judge(JudgeConfig(adapter="openai", model="gpt-test")) is not None
+    assert (
+        create_judge(JudgeConfig(adapter="openrouter", model="anthropic/claude-opus-4.8"))
+        is not None
+    )
+
+
+def test_openrouter_judge_completes_via_chat_completions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from owrb.judge import JudgeError, OpenAiCompatibleJudge
+
+    monkeypatch.setenv("OPENROUTER_API_KEY", "openrouter-secret")
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        captured["auth"] = request.headers.get("authorization")
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '[{"verdict": "supported"}]'}}]},
+        )
+
+    judge = OpenAiCompatibleJudge(
+        JudgeConfig(adapter="openrouter", model="anthropic/claude-opus-4.8")
+    )
+    judge.transport = httpx.MockTransport(handler)
+    text = asyncio.run(judge.complete("system prompt", "user prompt"))
+    assert text == '[{"verdict": "supported"}]'
+    assert captured["url"] == "https://openrouter.ai/api/v1/chat/completions"
+    assert captured["auth"] == "Bearer openrouter-secret"
+    assert captured["body"]["messages"][0] == {"role": "system", "content": "system prompt"}
+
+    # The generic flavour must be pointed at a gateway explicitly.
+    with pytest.raises(JudgeError, match="base_url"):
+        OpenAiCompatibleJudge(
+            JudgeConfig(adapter="openai_compatible", model="m"), flavour="openai_compatible"
+        )
 
 
 def test_evaluate_run_set_end_to_end(tmp_path: Path) -> None:

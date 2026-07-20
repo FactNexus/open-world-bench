@@ -1,0 +1,24 @@
+# Default baseline: Claude Sonnet via OpenRouter with the OpenRouter web plugin.
+# Requires OPENROUTER_API_KEY in the environment. One OpenRouter key gives
+# access to hundreds of models across providers, so swapping the candidate is
+# a one-line model change. cost_usd comes from OpenRouter's reported usage
+# cost (actual charge, including its fees), so no hand-configured rates are
+# needed. To target another provider or gateway directly, copy
+# openai-compatible.template.yaml or baseline-anthropic.yaml instead.
+schema_version: 1
+id: openrouter-sonnet-web-search
+name: Claude Sonnet 4.6 via OpenRouter with web search
+adapter: openrouter
+provider: openrouter
+model: anthropic/claude-sonnet-4.6
+capabilities:
+  web_search: true
+  citations: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  search_enabled: true
+  max_searches: 8
+  max_tokens: 4096
+environment:
+  api_key: OPENROUTER_API_KEY
