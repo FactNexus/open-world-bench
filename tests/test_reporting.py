@@ -21,6 +21,7 @@ def test_write_reports_produces_offline_dashboard_and_exports(tmp_path: Path) ->
     assert "system-a" in index and "system-b" in index
     assert "Paired comparison" in index
     assert "manual-product" in index
+    assert "Quality by strategy" in index and "native_search" in index
 
     # Offline requirement: no scripts and no external assets.
     assert "<script" not in index
@@ -34,6 +35,15 @@ def test_write_reports_produces_offline_dashboard_and_exports(tmp_path: Path) ->
     assert {row["system_id"] for row in rows} == {"system-a", "system-b", "manual-product"}
     system_a = next(row for row in rows if row["system_id"] == "system-a")
     assert float(system_a["quality_mean"]) > 70
+    assert system_a["strategy"] == "native_search"
+
+    with (run_set / "report" / "by-strategy.csv").open() as handle:
+        strategy_rows = list(csv.DictReader(handle))
+    assert {row["strategy"] for row in strategy_rows} >= {
+        "native_search",
+        "private_index",
+        "unspecified",
+    }
 
     with (run_set / "report" / "pairwise.csv").open() as handle:
         pairwise_rows = list(csv.DictReader(handle))

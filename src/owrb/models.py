@@ -105,6 +105,20 @@ class SystemCapabilities(StrictModel):
     cost_metrics: bool = False
 
 
+# Open-world discovery strategy: how a candidate reaches its evidence. A single
+# controlled label per system so compare/report can group and rank strategies
+# (see systems/templates/). Independent of capabilities, which describe the
+# mechanism; strategy is the comparison axis.
+Strategy = Literal[
+    "parametric",  # own trained weights, no retrieval
+    "native_search",  # provider/gateway search service (web plugin, native tool)
+    "private_index",  # own private database / RAG
+    "external_tool",  # a service reached via MCP, CLI, or API
+    "web_browse",  # visit and scan public web resources
+    "hybrid",  # a combination of the above
+]
+
+
 class SystemDefinition(StrictModel):
     schema_version: int = 1
     id: str = Field(pattern=r"^[a-z0-9][a-z0-9-]*$")
@@ -112,6 +126,7 @@ class SystemDefinition(StrictModel):
     adapter: str
     provider: str | None = None
     model: str | None = None
+    strategy: Strategy | None = None
     capabilities: SystemCapabilities = Field(default_factory=SystemCapabilities)
     settings: dict[str, Any] = Field(default_factory=dict)
     environment: dict[str, str] = Field(default_factory=dict)
