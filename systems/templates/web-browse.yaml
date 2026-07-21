@@ -1,0 +1,19 @@
+# Strategy 5 — visit public web pages and scan them. Your runner fetches and
+# reads live pages (headless browser, fetcher, reader) and returns the answer
+# with the URLs it actually read as citations. See the BYO contract in README.md.
+schema_version: 1
+id: web-browse
+name: Live web browse-and-scan agent
+adapter: command
+provider: internal
+strategy: web_browse
+capabilities:
+  browser: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command: ["python", "runners/browse_agent.py"]
+  # The command adapter does NOT compute cost — report metrics.cost_usd
+  # from the runner if you want cost_metrics.

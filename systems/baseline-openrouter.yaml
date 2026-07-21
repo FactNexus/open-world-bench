@@ -11,6 +11,7 @@ name: Claude Sonnet 4.6 via OpenRouter with web search
 adapter: openrouter
 provider: openrouter
 model: anthropic/claude-sonnet-4.6
+strategy: native_search
 capabilities:
   web_search: true
   citations: true

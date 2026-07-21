@@ -1,0 +1,21 @@
+# Strategy 3 — direct search service. OpenRouter's web plugin gives the model
+# live search + url_citation sources — the ChatGPT/Gemini-style path. Flip
+# search_enabled to false and this becomes parametric-only.
+schema_version: 1
+id: native-search
+name: Model with native web search
+adapter: openrouter
+provider: openrouter
+model: anthropic/claude-opus-4.8   # any OpenRouter model id
+strategy: native_search
+capabilities:
+  web_search: true
+  citations: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  search_enabled: true
+  max_searches: 8
+  max_tokens: 4096
+environment:
+  api_key: OPENROUTER_API_KEY

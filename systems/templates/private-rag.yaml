@@ -1,0 +1,24 @@
+# Strategy 2 — your own private index / RAG service. OWRB POSTs the frozen
+# request; your endpoint answers from your store and returns sources.
+# Request/response shape is the BYO contract in README.md.
+schema_version: 1
+id: private-rag
+name: Private index (RAG) service
+adapter: generic_http
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  citations: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  endpoint: https://your-rag.internal/answer   # or ${RAG_ENDPOINT}
+  method: POST
+  # Defaults already map $.answer / $.citations / $.metrics / $.trace;
+  # override only if your JSON uses different paths:
+  # response_mapping:
+  #   answer: $.result.text
+  #   citations: $.result.sources
+environment:
+  api_key: RAG_API_KEY        # sent as Bearer; omit if your service is open

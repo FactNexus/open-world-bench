@@ -1,0 +1,21 @@
+# Strategy 4 — a service reached through a tool the model is given access to:
+# an MCP server, a CLI, or a plain HTTP API. Your runner attaches the tool,
+# runs the agent loop, and prints the BYO contract to stdout (see README.md).
+# The three sub-cases share one mechanism; only the capability label differs.
+schema_version: 1
+id: external-tool
+name: Agent using an external tool (MCP / CLI / API)
+adapter: command
+provider: internal
+strategy: external_tool
+capabilities:
+  mcp: true            # drop this line if the tool is a CLI or plain API, not MCP
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command: ["python", "runners/agent.py"]
+  # argv only — the runner owns model choice, the tool endpoint, and auth
+  # (from its own environment). The command adapter does NOT compute cost,
+  # so report metrics.cost_usd from the runner if you want cost_metrics.
