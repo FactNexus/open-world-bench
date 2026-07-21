@@ -29,6 +29,7 @@ class TrialRecord:
     scenario_id: str
     template_id: str
     system_id: str
+    strategy: str | None
     trial_id: str
     status: str
     manual: bool
@@ -56,6 +57,11 @@ def load_trials(run_set_directory: Path) -> list[TrialRecord]:
         scenario_id = result["scenario_instance_id"]
         if scenario_id not in template_by_scenario:
             continue
+        config_path = result_path.parent / "config.json"
+        strategy: str | None = None
+        if config_path.is_file():
+            config = json.loads(config_path.read_text("utf-8"))
+            strategy = (config.get("system") or {}).get("strategy")
         evaluation_path = result_path.parent / "evaluation.json"
         quality: float | None = None
         hard_cap = False
@@ -74,6 +80,7 @@ def load_trials(run_set_directory: Path) -> list[TrialRecord]:
                 scenario_id=scenario_id,
                 template_id=template_by_scenario[scenario_id],
                 system_id=result["system_id"],
+                strategy=strategy,
                 trial_id=result["trial_id"],
                 status=result["status"],
                 manual=result["status"] == "manual",
@@ -127,6 +134,7 @@ def summarize_system(system_id: str, records: list[TrialRecord]) -> dict[str, An
 
     summary: dict[str, Any] = {
         "system_id": system_id,
+        "strategy": next((record.strategy for record in records if record.strategy), None),
         "trials": total,
         "scored_trials": len(scored),
         "completion_rate": round(completed / total, 4) if total else 0.0,
@@ -196,6 +204,39 @@ def summarize_system(system_id: str, records: list[TrialRecord]) -> dict[str, An
         latency = efficiency.get("latency_ms", {}).get("mean")
         if latency:
             efficiency["quality_per_minute"] = round(quality_mean / (latency / 60_000), 2)
+    summary["efficiency"] = efficiency
+    return summary
+
+
+def summarize_strategy(
+    strategy: str, records: list[TrialRecord], system_ids: list[str]
+) -> dict[str, Any]:
+    """Pool trials across every system sharing one strategy (the comparison axis)."""
+    scored = _scored(records)
+    qualities = [record.quality for record in scored if record.quality is not None]
+    automated = [record for record in scored if not record.manual]
+    summary: dict[str, Any] = {
+        "strategy": strategy,
+        "systems": sorted(system_ids),
+        "system_count": len(set(system_ids)),
+        "scored_trials": len(scored),
+    }
+    if qualities:
+        summary["quality"] = {
+            "mean": round(statistics.fmean(qualities), 2),
+            "median": round(statistics.median(qualities), 2),
+            "stdev": round(statistics.stdev(qualities), 2) if len(qualities) > 1 else 0.0,
+            "ci95": list(bootstrap_confidence_interval(qualities)),
+        }
+    efficiency: dict[str, float] = {}
+    for field, digits in (("cost_usd", 4), ("latency_ms", 1)):
+        values = [
+            getattr(record, field)
+            for record in automated
+            if getattr(record, field) is not None
+        ]
+        if values:
+            efficiency[f"{field}_mean"] = round(statistics.fmean(values), digits)
     summary["efficiency"] = efficiency
     return summary
 
@@ -274,6 +315,18 @@ def build_comparison(run_set_directory: Path) -> dict[str, Any]:
 
     system_ids = sorted(by_system)
     summaries = [summarize_system(system_id, by_system[system_id]) for system_id in system_ids]
+
+    by_strategy: dict[str, list[TrialRecord]] = {}
+    strategy_systems: dict[str, set[str]] = {}
+    for record in records:
+        label = record.strategy or "unspecified"
+        by_strategy.setdefault(label, []).append(record)
+        strategy_systems.setdefault(label, set()).add(record.system_id)
+    strategies = [
+        summarize_strategy(label, by_strategy[label], sorted(strategy_systems[label]))
+        for label in sorted(by_strategy)
+    ]
+
     pairwise: list[dict[str, Any]] = []
     for index, system_a in enumerate(system_ids):
         for system_b in system_ids[index + 1 :]:
@@ -292,6 +345,7 @@ def build_comparison(run_set_directory: Path) -> dict[str, Any]:
     return {
         "run_set": run_set_directory.name,
         "systems": summaries,
+        "strategies": strategies,
         "pairwise": pairwise,
         "pareto_frontier_cost_quality": pareto_frontier(summaries),
         "scenario_count": len({record.scenario_id for record in records}),

@@ -111,6 +111,26 @@
       "additionalProperties": true,
       "title": "Settings",
       "type": "object"
+    },
+    "strategy": {
+      "anyOf": [
+        {
+          "enum": [
+            "parametric",
+            "native_search",
+            "private_index",
+            "external_tool",
+            "web_browse",
+            "hybrid"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Strategy"
     }
   },
   "required": [

@@ -1,0 +1,22 @@
+# Strategy 6 — combine strategies (e.g. private index -> live search -> browse).
+# One runner orchestrates the mix; set the capability flags that are actually
+# true for your pipeline. See the BYO contract in README.md.
+schema_version: 1
+id: hybrid
+name: Hybrid multi-strategy agent
+adapter: command
+provider: internal
+strategy: hybrid
+capabilities:
+  web_search: true
+  domain_index: true
+  browser: true
+  mcp: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command: ["python", "runners/hybrid_agent.py"]
+  # The command adapter does NOT compute cost — report metrics.cost_usd
+  # from the runner if you want cost_metrics.

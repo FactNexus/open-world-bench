@@ -119,6 +119,25 @@ def test_example_system_definitions_are_valid() -> None:
         assert result.valid, (system_path, [issue.as_dict() for issue in result.issues])
 
 
+def test_strategy_templates_are_valid_and_labelled() -> None:
+    template_paths = sorted((SYSTEMS_DIRECTORY / "templates").glob("*.yaml"))
+    assert template_paths, "expected strategy templates under systems/templates/"
+    for system_path in template_paths:
+        result = validate_system_definition(system_path)
+        assert result.valid, (system_path, [issue.as_dict() for issue in result.issues])
+        assert result.system is not None and result.system.strategy is not None, system_path
+
+
+def test_invalid_strategy_is_an_error(tmp_path: Path) -> None:
+    system_path = tmp_path / "system.yaml"
+    system_path.write_text(
+        "schema_version: 1\nid: bogus\nname: Bogus\nadapter: openrouter\nstrategy: telepathy\n",
+        encoding="utf-8",
+    )
+    result = validate_system_definition(system_path)
+    assert not result.valid
+
+
 def test_unknown_adapter_is_a_warning_not_an_error(tmp_path: Path) -> None:
     system_path = tmp_path / "system.yaml"
     system_path.write_text(

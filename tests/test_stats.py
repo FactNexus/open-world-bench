@@ -21,6 +21,8 @@ QUALITIES = {
 }
 TEMPLATES = {"s1": "t-alpha", "s2": "t-beta", "s3": "t-alpha"}
 COSTS = {"system-a": 0.01, "system-b": 0.002}
+# manual-product declares no strategy on purpose -> grouped under "unspecified".
+STRATEGIES = {"system-a": "native_search", "system-b": "private_index"}
 
 
 def write_run_set(tmp_path: Path, include_manual: bool = True) -> Path:
@@ -62,6 +64,12 @@ def write_run_set(tmp_path: Path, include_manual: bool = True) -> Path:
             "provider_metadata": {},
         }
         (trial_directory / "result.json").write_text(json.dumps(result), encoding="utf-8")
+        (trial_directory / "config.json").write_text(
+            json.dumps(
+                {"system": {"id": system_id, "strategy": STRATEGIES.get(system_id)}, "run": {}}
+            ),
+            encoding="utf-8",
+        )
         if quality is not None:
             evaluation = {
                 "run_id": f"{scenario_id}/{system_id}/t01",
@@ -90,6 +98,35 @@ def test_load_trials_joins_results_and_evaluations(tmp_path: Path) -> None:
     assert first.cost_usd == 0.01
     manual = next(r for r in records if r.system_id == "manual-product")
     assert manual.manual is True
+
+
+def test_records_and_summaries_carry_strategy(tmp_path: Path) -> None:
+    run_set = write_run_set(tmp_path)
+    records = load_trials(run_set)
+    assert next(r for r in records if r.system_id == "system-a").strategy == "native_search"
+    assert next(r for r in records if r.system_id == "manual-product").strategy is None
+    comparison = build_comparison(run_set)
+    by_id = {system["system_id"]: system for system in comparison["systems"]}
+    assert by_id["system-a"]["strategy"] == "native_search"
+    assert by_id["manual-product"]["strategy"] is None
+
+
+def test_strategy_grouping_pools_systems_and_labels_unspecified(tmp_path: Path) -> None:
+    comparison = build_comparison(write_run_set(tmp_path))
+    by_strategy = {entry["strategy"]: entry for entry in comparison["strategies"]}
+    assert set(by_strategy) == {"native_search", "private_index", "unspecified"}
+
+    native = by_strategy["native_search"]
+    assert native["systems"] == ["system-a"]
+    assert native["system_count"] == 1
+    assert native["scored_trials"] == 3
+    assert native["quality"]["mean"] == pytest.approx(73.33, abs=0.01)
+    assert native["efficiency"]["cost_usd_mean"] == pytest.approx(0.01, abs=1e-9)
+
+    # The manual product carries no strategy and no efficiency (excluded per 13.5).
+    unspecified = by_strategy["unspecified"]
+    assert unspecified["systems"] == ["manual-product"]
+    assert unspecified["efficiency"] == {}
 
 
 def test_bootstrap_ci_is_deterministic_and_brackets_the_mean() -> None:
