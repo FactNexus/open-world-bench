@@ -1,0 +1,28 @@
+# System 3 — class-matched alternative model on the onto-enabled stack:
+# Claude Haiku 4.5 (Anthropic's fast tier, ~same class as production's
+# gemini-3-flash) driving edge-search with ontology. Same runner and
+# manifold as system 2; only the model differs. (The frontier variant,
+# systems/edge-search-onto-opus5.yaml, is kept out of the suite but ready.)
+schema_version: 1
+id: edge-search-onto-haiku45
+name: Claude Haiku 4.5 + edge-search with ontology
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - anthropic/claude-haiku-4.5
+    - --manifold
+    - "13"
+environment:
+  api_key: OPENROUTER_API_KEY

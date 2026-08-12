@@ -1,0 +1,26 @@
+# System 2 — current production model WITH the ontology: identical to the
+# control (same runner, model, manifold 13 on launchlive) except the
+# ontological leg stays enabled.
+schema_version: 1
+id: edge-search-onto-gemini-flash
+name: gemini-3-flash + edge-search with ontology
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+environment:
+  api_key: OPENROUTER_API_KEY

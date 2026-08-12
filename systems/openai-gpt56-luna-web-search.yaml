@@ -1,0 +1,23 @@
+# System 4 — ChatGPT approximation, class-matched to production's
+# gemini-3-flash: gpt-5.6-luna (OpenAI's light tier) with OpenAI's
+# own native web_search tool (Responses API), provider-direct. This is the
+# same model + search stack the ChatGPT product uses, unlike third-party web
+# plugins. If gpt-5.6-luna rejects the web_search tool, fall back to
+# gpt-5.2-chat-latest (the ChatGPT alias line).
+schema_version: 1
+id: openai-gpt56-luna-web-search
+name: GPT-5.6 (luna) with OpenAI native web search
+adapter: openai
+provider: openai
+model: gpt-5.6-luna
+strategy: native_search
+capabilities:
+  web_search: true
+  citations: true
+  token_metrics: true
+  cost_metrics: false
+settings:
+  search_enabled: true
+  max_tokens: 4096
+environment:
+  api_key: OPENAI_API_KEY
