@@ -21,12 +21,18 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import time
 
 import httpx
 
 BASE = "https://generativelanguage.googleapis.com/v1beta/models"
+
+
+def _redact(message: str) -> str:
+    """Strip the API key from error text — it rides in the request URL as ?key=."""
+    return re.sub(r"key=[^&\s'\"]+", "key=***", message)
 
 
 def main() -> int:
@@ -63,12 +69,12 @@ def main() -> int:
             except (httpx.HTTPStatusError, httpx.TransportError) as e:
                 status = getattr(getattr(e, "response", None), "status_code", None)
                 if status is not None and status < 500 and status != 429:
-                    print(f"gemini error: {e}", file=sys.stderr)
+                    print(f"gemini error: {_redact(str(e))}", file=sys.stderr)
                     return 1
                 last_err = e
                 time.sleep(2 ** (attempt + 1))
     if response is None:
-        print(f"gemini unavailable after retries: {last_err}", file=sys.stderr)
+        print(f"gemini unavailable after retries: {_redact(str(last_err))}", file=sys.stderr)
         return 1
 
     try:
