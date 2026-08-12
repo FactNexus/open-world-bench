@@ -138,6 +138,10 @@ class EdgeSearch:
             timeout=60.0,
         )
         self.searches = 0
+        # Retrieval calls that returned HTTP 200. Zero of these across the whole
+        # episode means edge-search was unreachable (every call errored) — the
+        # trial must fail rather than let the model answer from memory.
+        self.ok_calls = 0
         # URLs whose content the model has actually seen via `read` —
         # citation fallback when it answers without calling submit_answer.
         self.read_urls: list[str] = []
@@ -154,6 +158,7 @@ class EdgeSearch:
             },
         )
         r.raise_for_status()
+        self.ok_calls += 1
         data = r.json()
         out: dict[str, Any] = {
             "results": [
@@ -178,6 +183,7 @@ class EdgeSearch:
             },
         )
         r.raise_for_status()
+        self.ok_calls += 1
         content = r.json().get("content", "")
         if isinstance(content, (dict, list)):
             content = json.dumps(content)
@@ -315,6 +321,26 @@ def main() -> int:
             )
         if done:
             break
+
+    # Integrity guard: this is an edge-search-backed system, so an answer is
+    # only valid if at least one retrieval actually succeeded. Zero successful
+    # calls means the backend was unreachable (every attempt errored) or the
+    # model never grounded — either way, fail the trial instead of emitting a
+    # memory-only answer that would score as if edge-search had answered.
+    if es.ok_calls == 0:
+        if es.searches:
+            print(
+                f"all {es.searches} edge-search retrieval call(s) failed "
+                "(backend unreachable?); failing trial to avoid a memory-only answer",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                "no edge-search retrieval performed; failing trial to avoid a "
+                "memory-only answer",
+                file=sys.stderr,
+            )
+        return 1
 
     if not answer:
         print("agent produced no answer", file=sys.stderr)
