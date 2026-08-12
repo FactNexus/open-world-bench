@@ -209,12 +209,19 @@ def chat(client: httpx.Client, model: str, messages: list[dict], force_submit: b
         try:
             r = client.post(OPENROUTER_URL, json=body)
             r.raise_for_status()
-            return r.json()
+            data = r.json()
+            # OpenRouter can return HTTP 200 with an error body and no "choices"
+            # (a provider hiccup or rate limit surfaced in-band). Treat that as a
+            # transient and retry rather than crashing on data["choices"].
+            if "choices" in data:
+                return data
+            last_err = RuntimeError(f"no choices in response: {json.dumps(data)[:200]}")
         except (httpx.HTTPStatusError, httpx.TransportError) as e:  # transient 429/5xx/network
             status = getattr(getattr(e, "response", None), "status_code", None)
             if status is not None and status < 500 and status != 429:
                 raise
             last_err = e
+        if attempt < 2:
             time.sleep(2 ** (attempt + 1))
     raise RuntimeError(f"OpenRouter unavailable after retries: {last_err}")
 
