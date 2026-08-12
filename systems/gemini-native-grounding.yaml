@@ -1,0 +1,25 @@
+# System 5 (preferred, standby) — faithful Google/Gemini approximation:
+# Gemini with native Google Search grounding via the Google AI Studio API.
+# Citations come from groundingMetadata (what Google's search actually
+# surfaced). Requires GEMINI_API_KEY; swap this into the suite in place of
+# gemini36-openrouter-web-search.yaml once the key exists.
+schema_version: 1
+id: gemini-native-grounding
+name: Gemini (flash latest) with native Google Search grounding
+adapter: command
+provider: internal
+strategy: native_search
+capabilities:
+  web_search: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: false
+settings:
+  command:
+    - python
+    - runners/gemini_grounding.py
+    - --model
+    - gemini-flash-latest
+environment:
+  api_key: GEMINI_API_KEY

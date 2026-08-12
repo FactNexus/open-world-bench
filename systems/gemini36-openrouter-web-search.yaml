@@ -1,0 +1,23 @@
+# System 5 (interim) — Google/Gemini approximation via OpenRouter: current
+# Gemini flagship flash + the OpenRouter web plugin. CAVEAT: the plugin's
+# search is Exa, not Google Search, so this under-approximates the consumer
+# Gemini product. When a GEMINI_API_KEY is available, switch the suite to
+# systems/gemini-native-grounding.yaml (native Google Search grounding).
+schema_version: 1
+id: gemini36-openrouter-web-search
+name: Gemini 3.6 Flash via OpenRouter with web plugin
+adapter: openrouter
+provider: openrouter
+model: google/gemini-3.6-flash
+strategy: native_search
+capabilities:
+  web_search: true
+  citations: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  search_enabled: true
+  max_searches: 8
+  max_tokens: 4096
+environment:
+  api_key: OPENROUTER_API_KEY
