@@ -14,12 +14,20 @@ capabilities:
   citations: true
   trace: true
   token_metrics: true
-  cost_metrics: false
+  cost_metrics: true
 settings:
   command:
     - python
     - runners/gemini_grounding.py
     - --model
     - gemini-flash-latest
+    # Pricing so the runner reports cost_usd: gemini-3.6-flash introductory
+    # rates + Google Search grounding list price ($14/1k queries), 2026.
+    - --price-in-per-mtok
+    - "0.75"
+    - --price-out-per-mtok
+    - "3.75"
+    - --price-per-1k-grounding
+    - "14"
 environment:
   api_key: GEMINI_API_KEY

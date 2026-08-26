@@ -38,6 +38,12 @@ def _redact(message: str) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="gemini-flash-latest")
+    # Pricing (USD) so the runner can self-report cost_usd. Defaults are the
+    # gemini-3.6-flash introductory rates + Google Search grounding list price
+    # (2026); override per system/run as prices change.
+    ap.add_argument("--price-in-per-mtok", type=float, default=0.75)
+    ap.add_argument("--price-out-per-mtok", type=float, default=3.75)
+    ap.add_argument("--price-per-1k-grounding", type=float, default=14.0)
     args = ap.parse_args()
 
     request = json.loads(sys.stdin.read())
@@ -105,15 +111,25 @@ def main() -> int:
 
     usage = response.get("usageMetadata") or {}
     searches = len(grounding.get("webSearchQueries") or [])
+    input_tokens = usage.get("promptTokenCount", 0)
+    # Gemini bills thinking tokens as output, so fold them into output_tokens for
+    # an accurate billable count (thoughts often exceed the visible answer).
+    output_tokens = usage.get("candidatesTokenCount", 0) + usage.get("thoughtsTokenCount", 0)
+    cost_usd = round(
+        (input_tokens * args.price_in_per_mtok + output_tokens * args.price_out_per_mtok) / 1e6
+        + searches * args.price_per_1k_grounding / 1000,
+        6,
+    )
     print(
         json.dumps(
             {
                 "answer": answer,
                 "citations": citations,
                 "metrics": {
-                    "input_tokens": usage.get("promptTokenCount", 0),
-                    "output_tokens": usage.get("candidatesTokenCount", 0),
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
                     "searches": searches,
+                    "cost_usd": cost_usd,
                 },
                 "trace": [
                     {
