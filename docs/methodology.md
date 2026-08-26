@@ -150,9 +150,10 @@ prefer re-running all systems together.
   disadvantaged.
 - **Efficiency telemetry is uneven.** Token and cost metrics depend on what
   providers expose. Where the gateway reports an actual charge (OpenRouter
-  does), `cost_usd` uses it; where cost is computed from configured token
-  rates (provider-direct adapters), search-request fees are not included.
-  Efficiency comparisons are strongest within a provider and indicative
+  does), `cost_usd` uses it; where cost is computed from configured rates
+  (provider-direct adapters), it covers tokens plus any declared per-search
+  fee (`cost.search_per_1k`), but a system that declares no rates reports no
+  cost. Efficiency comparisons are strongest within a provider and indicative
   across providers.
 - **Deterministic count checks are heuristic.** Recommendation counting
   parses markdown structure and carries reduced confidence; the rubric
