@@ -1,0 +1,32 @@
+# Partial-AND re-run arm (2026-08-21): identical to the earlier
+# edge-search-gated arm except the deployed edge-search now includes
+# partial-AND nugget resolution (plus gate+veto). New system id so the
+# pre-partial-AND arms stay frozen for before/after comparison in the
+# same run-set. Registered prediction: accessible-experiences hard-cap
+# rate drops toward control's 10/15 (was 13-14/15) and that template
+# scores climb from ~51 toward control's ~62; sparse templates hold.
+schema_version: 1
+id: edge-search-gated-pand-gemini-flash
+name: Gemini 3 Flash + edge-search, ontology gated + partial-AND
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --ontology-mode
+    - gated
+environment:
+  api_key: OPENROUTER_API_KEY

@@ -348,6 +348,12 @@ def evaluate_run_set_command(
     refresh_evidence: bool = typer.Option(
         False, "--refresh-evidence", help="Refetch cited URLs instead of using the cache"
     ),
+    resume: bool = typer.Option(
+        False, "--resume", help="Skip trials already evaluated by the same judge"
+    ),
+    scenario_concurrency: int = typer.Option(
+        1, "--scenario-concurrency", help="Scenarios evaluated concurrently"
+    ),
     json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON"),
 ) -> None:
     """Evaluate every trial in a run set (deterministic + evidence + judge)."""
@@ -366,7 +372,13 @@ def evaluate_run_set_command(
         )
     try:
         summary = asyncio.run(
-            evaluate_run_set(run_set, config=config, force_evidence_refresh=refresh_evidence)
+            evaluate_run_set(
+                run_set,
+                config=config,
+                force_evidence_refresh=refresh_evidence,
+                resume=resume,
+                scenario_concurrency=scenario_concurrency,
+            )
         )
     except ValueError as error:
         typer.echo(f"Evaluation failed: {error}", err=True)
