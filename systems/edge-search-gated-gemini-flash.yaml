@@ -1,0 +1,32 @@
+# System 6 — the gate-plus-veto integration: same model, manifold, and
+# runner as the control/onto arms; the ontological leg runs only when the
+# lexical+vector baseline fails the quality gate, and the region veto
+# demotes out-of-region pages whenever the leg fires. Prediction registered
+# before the run: ≈ control on accessible-experiences (gate keeps the leg
+# out of saturated queries), ≥ onto-always on remote-area/season templates
+# (leg fires where retrieval is weak).
+schema_version: 1
+id: edge-search-gated-gemini-flash
+name: Gemini 3 Flash + edge-search with gated ontology + region veto
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --ontology-mode
+    - gated
+environment:
+  api_key: OPENROUTER_API_KEY

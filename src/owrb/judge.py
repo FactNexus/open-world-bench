@@ -8,6 +8,7 @@ panels, pairwise judging, and self-consistency later.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from typing import Any, Protocol
@@ -185,34 +186,59 @@ class OpenAiCompatibleJudge:
             raise JudgeError("an openai_compatible judge requires api_key_env")
         api_key = resolve_environment_value(key_variable)
         base_url = (self._config.base_url or self._OPENROUTER_BASE_URL).rstrip("/")
-        async with self._httpx.AsyncClient(transport=self.transport, timeout=120) as client:
-            response = await client.post(
-                f"{base_url}/chat/completions",
-                json={
-                    "model": self._config.model,
-                    "temperature": self._config.temperature,
-                    "max_tokens": self._config.max_tokens,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                },
-                headers={
-                    "authorization": f"Bearer {api_key}",
-                    "content-type": "application/json",
-                },
-            )
-        if response.status_code != 200:
-            raise JudgeError(
-                f"{self._flavour} judge returned {response.status_code}: {response.text[:300]}"
-            )
-        payload = response.json()
-        choices = payload.get("choices") or []
-        message = choices[0].get("message") if choices else None
-        content = (message or {}).get("content") or ""
-        if not content.strip():
-            raise JudgeError(f"{self._flavour} judge response contained no text content")
-        return str(content)
+        # Transport failures, 429/5xx, and malformed 200 bodies (a truncated
+        # stream parses as invalid JSON) are transient — retry with backoff
+        # rather than aborting a long evaluation pass.
+        last_error: Exception | None = None
+        for attempt in range(3):
+            if attempt:
+                await asyncio.sleep(2**attempt)
+            try:
+                async with self._httpx.AsyncClient(
+                    transport=self.transport, timeout=120
+                ) as client:
+                    response = await client.post(
+                        f"{base_url}/chat/completions",
+                        json={
+                            "model": self._config.model,
+                            "temperature": self._config.temperature,
+                            "max_tokens": self._config.max_tokens,
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": user_prompt},
+                            ],
+                        },
+                        headers={
+                            "authorization": f"Bearer {api_key}",
+                            "content-type": "application/json",
+                        },
+                    )
+            except self._httpx.HTTPError as error:
+                last_error = error
+                continue
+            if response.status_code == 429 or response.status_code >= 500:
+                last_error = JudgeError(
+                    f"{self._flavour} judge returned {response.status_code}: "
+                    f"{response.text[:300]}"
+                )
+                continue
+            if response.status_code != 200:
+                raise JudgeError(
+                    f"{self._flavour} judge returned {response.status_code}: "
+                    f"{response.text[:300]}"
+                )
+            try:
+                payload = response.json()
+            except ValueError as error:
+                last_error = error
+                continue
+            choices = payload.get("choices") or []
+            message = choices[0].get("message") if choices else None
+            content = (message or {}).get("content") or ""
+            if not content.strip():
+                raise JudgeError(f"{self._flavour} judge response contained no text content")
+            return str(content)
+        raise JudgeError(f"{self._flavour} judge unavailable after retries: {last_error}")
 
 
 def create_judge(config: JudgeConfig) -> JudgeClient | None:

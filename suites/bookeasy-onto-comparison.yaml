@@ -32,6 +32,9 @@ scenario_generation:
 systems:
   - systems/edge-search-control-gemini-flash.yaml
   - systems/edge-search-onto-gemini-flash.yaml
+  # Gate-plus-veto arm (added 2026-08-14 via scripts/owrb_run_system.py —
+  # ran after the original five, same frozen scenarios).
+  - systems/edge-search-gated-gemini-flash.yaml
   - systems/edge-search-onto-haiku45.yaml
   - systems/openai-gpt56-luna-web-search.yaml
   # Faithful Gemini approximation: native Google Search grounding (GEMINI_API_KEY).

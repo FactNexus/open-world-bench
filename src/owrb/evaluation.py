@@ -14,6 +14,7 @@ Quality and efficiency stay separate: nothing here reads run metrics.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -513,12 +514,28 @@ def _load_run_results(run_set_directory: Path, scenario_id: str) -> list[tuple[P
     return results
 
 
+def _already_evaluated(trial_directory: Path, judge: JudgeClient | None) -> bool:
+    """True when the trial already carries an evaluation by this same judge."""
+    if judge is None:
+        return False
+    evaluation_path = trial_directory / "evaluation.json"
+    if not evaluation_path.is_file():
+        return False
+    try:
+        existing = json.loads(evaluation_path.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return bool(existing.get("judge_configuration") == dict(judge.identity))
+
+
 async def evaluate_run_set(
     run_set_directory: Path,
     config: EvaluationConfig | None = None,
     judge: JudgeClient | None = None,
     store: EvidenceStore | None = None,
     force_evidence_refresh: bool = False,
+    resume: bool = False,
+    scenario_concurrency: int = 1,
 ) -> dict[str, Any]:
     """Evaluate every trial in a run set; returns a summary dict."""
     scenario_directory = run_set_directory / "scenarios"
@@ -531,7 +548,13 @@ async def evaluate_run_set(
         if manifest_path.is_file():
             manifest = json.loads(manifest_path.read_text("utf-8"))
             raw_evaluation = dict(manifest.get("suite", {}).get("evaluation") or {})
-            known_judge_adapters = {"anthropic", "openai", "none"}
+            known_judge_adapters = {
+                "anthropic",
+                "openai",
+                "openrouter",
+                "openai_compatible",
+                "none",
+            }
             raw_judge = dict(raw_evaluation.get("judge") or {})
             if raw_judge.get("adapter") not in known_judge_adapters:
                 raw_judge = {}
@@ -553,45 +576,71 @@ async def evaluate_run_set(
             "no judge configured; only deterministic and evidence checks were scored"
         )
 
-    for scenario_path in sorted(scenario_directory.glob("*.json")):
-        scenario = ScenarioInstance.model_validate_json(scenario_path.read_text("utf-8"))
-        trials = _load_run_results(run_set_directory, scenario.id)
-        if not trials:
-            continue
-        summary["scenarios"] += 1
+    summary["skipped"] = 0
+    semaphore = asyncio.Semaphore(max(1, scenario_concurrency))
 
-        cited_urls = sorted(
-            {
-                citation.url
-                for _directory, result in trials
-                for citation in result.citations
-            }
-        )
-        evidence: dict[str, tuple[EvidenceRecord, str]] = {}
-        if cited_urls:
-            await build_evidence_bundle(
-                store,
-                scenario.id,
-                cited_urls,
-                run_set_directory / "evidence" / "bundles",
-                force=force_evidence_refresh,
+    async def process_scenario(scenario_path: Path) -> None:
+        async with semaphore:
+            scenario = ScenarioInstance.model_validate_json(scenario_path.read_text("utf-8"))
+            trials = _load_run_results(run_set_directory, scenario.id)
+            if not trials:
+                return
+            summary["scenarios"] += 1
+            if resume:
+                remaining = [
+                    (directory, result)
+                    for directory, result in trials
+                    if not _already_evaluated(directory, judge)
+                ]
+                summary["skipped"] += len(trials) - len(remaining)
+                trials = remaining
+                if not trials:
+                    return
+
+            cited_urls = sorted(
+                {
+                    citation.url
+                    for _directory, result in trials
+                    for citation in result.citations
+                }
             )
-            for url in cited_urls:
-                evidence[url] = await store.get(url)
-
-        for trial_directory, result in trials:
-            trial_evidence = {
-                citation.url: evidence[citation.url]
-                for citation in result.citations
-                if citation.url in evidence
-            }
-            evaluation = await evaluate_run(scenario, result, trial_evidence, judge, config)
-            (trial_directory / "evaluation.json").write_bytes(
-                orjson.dumps(
-                    evaluation.model_dump(mode="json"),
-                    option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS,
+            evidence: dict[str, tuple[EvidenceRecord, str]] = {}
+            if cited_urls:
+                await build_evidence_bundle(
+                    store,
+                    scenario.id,
+                    cited_urls,
+                    run_set_directory / "evidence" / "bundles",
+                    force=force_evidence_refresh,
                 )
-                + b"\n"
-            )
-            summary["evaluated"] += 1
+                for url in cited_urls:
+                    evidence[url] = await store.get(url)
+
+            for trial_directory, result in trials:
+                trial_evidence = {
+                    citation.url: evidence[citation.url]
+                    for citation in result.citations
+                    if citation.url in evidence
+                }
+                try:
+                    evaluation = await evaluate_run(
+                        scenario, result, trial_evidence, judge, config
+                    )
+                except Exception as error:  # noqa: BLE001 — one trial must not sink the pass
+                    summary["warnings"].append(
+                        f"evaluation failed for {trial_directory}: {type(error).__name__}: {error}"
+                    )
+                    continue
+                (trial_directory / "evaluation.json").write_bytes(
+                    orjson.dumps(
+                        evaluation.model_dump(mode="json"),
+                        option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS,
+                    )
+                    + b"\n"
+                )
+                summary["evaluated"] += 1
+
+    async with asyncio.TaskGroup() as task_group:
+        for scenario_path in sorted(scenario_directory.glob("*.json")):
+            task_group.create_task(process_scenario(scenario_path))
     return summary

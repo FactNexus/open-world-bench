@@ -129,9 +129,17 @@ TOOLS = [
 
 
 class EdgeSearch:
-    def __init__(self, base_url: str, api_key: str, manifold_id: int, disable_ontology: bool):
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        manifold_id: int,
+        disable_ontology: bool,
+        ontology_mode: str | None = None,
+    ):
         self.manifold_id = manifold_id
         self.disable_ontology = disable_ontology
+        self.ontology_mode = ontology_mode
         self.client = httpx.Client(
             base_url=base_url,
             headers={"Authorization": f"Bearer {api_key}"},
@@ -155,6 +163,7 @@ class EdgeSearch:
                 "query": query,
                 "top_k": max(1, min(int(top_k or 8), 20)),
                 "disable_ontology": self.disable_ontology,
+                **({"ontology_mode": self.ontology_mode} if self.ontology_mode else {}),
             },
         )
         r.raise_for_status()
@@ -180,6 +189,7 @@ class EdgeSearch:
                 "top_k": max(1, min(int(top_k or 4), 8)),
                 "token_limit": 5000,
                 "disable_ontology": self.disable_ontology,
+                **({"ontology_mode": self.ontology_mode} if self.ontology_mode else {}),
             },
         )
         r.raise_for_status()
@@ -231,6 +241,7 @@ def main() -> int:
     ap.add_argument("--model", required=True)
     ap.add_argument("--manifold", type=int, required=True)
     ap.add_argument("--disable-ontology", action="store_true")
+    ap.add_argument("--ontology-mode", choices=["off", "gated", "always"], default=None)
     ap.add_argument("--max-steps", type=int, default=12)
     args = ap.parse_args()
 
@@ -245,6 +256,7 @@ def main() -> int:
         os.environ["EDGE_SEARCH_API_KEY"],
         args.manifold,
         args.disable_ontology,
+        args.ontology_mode,
     )
     or_client = httpx.Client(
         headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"},
