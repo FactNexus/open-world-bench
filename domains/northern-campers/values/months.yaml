@@ -1,0 +1,34 @@
+# Travel month. gibb_open says whether the Gibb River Road is normally open;
+# shoulder marks months where conditions are uncertain and checks matter.
+- id: april
+  label: April
+  gibb_open: 0
+  shoulder: 1
+- id: may
+  label: May
+  gibb_open: 1
+  shoulder: 1
+- id: june
+  label: June
+  gibb_open: 1
+  shoulder: 0
+- id: july
+  label: July
+  gibb_open: 1
+  shoulder: 0
+- id: august
+  label: August
+  gibb_open: 1
+  shoulder: 0
+- id: september
+  label: September
+  gibb_open: 1
+  shoulder: 0
+- id: october
+  label: October
+  gibb_open: 1
+  shoulder: 1
+- id: november
+  label: November
+  gibb_open: 0
+  shoulder: 1

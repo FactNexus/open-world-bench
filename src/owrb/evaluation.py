@@ -59,6 +59,21 @@ _SYSTEM_PROMPT = (
 )
 
 
+class EvidenceGatewayConfig(BaseModel):
+    """Fetch pages under ``match_prefix`` through an edge-search gateway endpoint
+    (``POST /v1/gateway/fetch``) instead of directly. For candidate-owned pages
+    the evaluator cannot reach itself, such as a loopback md-site behind a
+    private index. The evidence record carries the provenance (SPEC.md 15.5)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    match_prefix: str
+    endpoint: str
+    manifold_id: int
+    api_key_env: str = ""
+    accept: str = "markdown"
+
+
 class EvaluationConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -68,6 +83,7 @@ class EvaluationConfig(BaseModel):
     hard_constraint_score_cap: float = Field(default=49, ge=0, le=100)
     evidence_cache: bool = True
     judge: JudgeConfig = Field(default_factory=JudgeConfig)
+    evidence_gateways: list[EvidenceGatewayConfig] = Field(default_factory=list)
 
 
 def _truncate(text: str, limit: int) -> str:
@@ -563,7 +579,10 @@ async def evaluate_run_set(
     if judge is None:
         judge = create_judge(config.judge)
     if store is None:
-        store = EvidenceStore(run_set_directory / "evidence")
+        store = EvidenceStore(
+            run_set_directory / "evidence",
+            gateways=[g.model_dump() for g in config.evidence_gateways],
+        )
 
     summary: dict[str, Any] = {
         "evaluated": 0,

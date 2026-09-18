@@ -1,0 +1,29 @@
+# Arm (b): WikiCamps plus whatever else carries the 'northern-exposure' tag on the Bookeasy manifold. Ontology off; the only change from (a) is the tag.
+# edge-search on bookeasylive via its public host: source ~/.owrb-bookeasylive.env after
+# ~/.owrb.env so EDGE_SEARCH_URL / EDGE_SEARCH_API_KEY point there (gateway-scoped key).
+schema_version: 1
+id: northern-campers-b-northern-exposure
+name: Gemini 3 Flash + edge-search scoped by tag northern-exposure, no ontology
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: false
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --tags
+    - northern-exposure
+    - --disable-ontology
+environment:
+  api_key: OPENROUTER_API_KEY

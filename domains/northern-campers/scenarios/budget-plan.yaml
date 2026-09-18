@@ -1,0 +1,84 @@
+schema_version: 1
+id: budget-plan
+name: Camping budget for a leg
+version: 0.1.0
+description: >
+  Estimate a camping budget for a leg using free, donation and paid camps
+  as the budget stance requires, with dated fees, and say where cost can be
+  cut without cutting safety. Brief family 6 (budget and fee planning).
+prompt: |
+  {{ traveller.description | capitalize }} is planning {{ trip_days }} days
+  from {{ leg.origin_name }} to {{ leg.destination_name }} via
+  {{ leg.route }} in {{ month.label }}, in {{ rig.label }}. They want
+  {{ budget.label }}.
+
+  Estimate their camping budget for the trip: which camps they would use
+  each night, what each costs per night for their party and rig, and when
+  that price was last reported. Total it. Then say where they could reduce
+  the cost without materially reducing safety or the quality of the trip,
+  and which paid camps are worth the money for what they offer. Cite a
+  source for every fee and mark any price you could not verify.
+parameters:
+  leg:
+    source: leg
+  traveller:
+    source: traveller
+  rig:
+    source: rig
+  budget:
+    source: budget
+  month:
+    source: month
+  trip_days:
+    provider:
+      type: values
+      values: [5, 7, 10, 12]
+rules:
+  - "trip_days >= leg.days_min and trip_days <= leg.days_max"
+  - "not (leg.fourwd_only == 1 and rig.gibb_ok == 0)"
+  - "not (leg.gibb == 1 and month.gibb_open == 0)"
+  - "(rig.id == 'caravan' and traveller.allow_caravan == 1) or (rig.id == 'van' and traveller.allow_van == 1) or (rig.id == 'fourwd' and traveller.allow_4wd == 1) or (rig.id == 'sedan' and traveller.allow_sedan == 1)"
+  - "not (budget.id == 'comfort' and traveller.id == 'budget-nomad')"
+  - "not (budget.id == 'free-first' and traveller.id == 'caravan-comfort')"
+criteria:
+  - id: fees-dated
+    dimension: citation_support
+    title: Every fee carries a source and a report date
+    description: >
+      Each nightly cost must be cited and dated; a price presented without a
+      date or source is a violation.
+    hard: true
+    weight: 2.0
+  - id: arithmetic
+    dimension: factual_correctness
+    title: The total follows from the nightly costs
+    description: >
+      The nights, per-night costs and total must be consistent with each
+      other and with the party size and rig.
+  - id: budget-stance
+    dimension: constraint_satisfaction
+    title: Camp choices follow the stated budget stance
+    description: >
+      The mix of free, donation and paid camps must match what the traveller
+      asked for.
+    hard: true
+    weight: 1.0
+  - id: savings
+    dimension: coverage
+    title: Savings are identified without trading away safety
+    description: >
+      The answer should name specific ways to cut cost and say what, if
+      anything, is given up.
+  - id: value
+    dimension: coverage
+    title: Paid camps worth the money are identified with reasons
+    description: >
+      Value judgements should rest on facilities, location and traveller
+      feedback, not price alone.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Show the nightly costs in a table with the report date of each fee, then the total.
+tags: [budget, fees, camping, value]
+difficulty: medium

@@ -1,0 +1,84 @@
+schema_version: 1
+id: hidden-poi
+name: Long-tail stops along the way
+version: 0.1.0
+description: >
+  Non-accommodation stops between two corridor points that improve the trip,
+  including lesser-known ones. Brief family 3 (hidden POI and regional
+  intelligence).
+prompt: |
+  {{ traveller.description | capitalize }} is driving from
+  {{ leg.origin_name }} to {{ leg.destination_name }} via {{ leg.route }} in
+  {{ month.label }}, in {{ rig.label }}. They are especially interested in
+  {{ interest.label }}.
+
+  Recommend {{ recommendation_count }} stops between the two points that are
+  not places to sleep: swimming holes, lookouts, river access, day-use areas,
+  short detours, historic or cultural sites, and the practical stops a
+  traveller like this actually needs on the way. Favour places a standard
+  tourism guide would miss, and say for each what makes it worth the stop,
+  how far off the route it is, whether the access road suits this rig, and
+  what recent visitors have said. Cite sources close to the claims and flag
+  anything you could not verify.
+parameters:
+  leg:
+    source: leg
+  traveller:
+    source: traveller
+  rig:
+    source: rig
+  interest:
+    source: interest
+  month:
+    source: month
+  recommendation_count:
+    provider:
+      type: values
+      values: [5, 6, 8]
+rules:
+  - "not (leg.fourwd_only == 1 and rig.gibb_ok == 0)"
+  - "not (leg.gibb == 1 and month.gibb_open == 0)"
+  - "(rig.id == 'caravan' and traveller.allow_caravan == 1) or (rig.id == 'van' and traveller.allow_van == 1) or (rig.id == 'fourwd' and traveller.allow_4wd == 1) or (rig.id == 'sedan' and traveller.allow_sedan == 1)"
+  - "not (interest.id == 'walk-long' and traveller.id == 'grey-nomad')"
+  - "not (interest.id == 'fishing' and leg.gibb == 0 and leg.km > 1500)"
+criteria:
+  - id: long-tail-coverage
+    dimension: coverage
+    title: The stops include lesser-known places, not only headline attractions
+    description: >
+      A good answer surfaces places beyond the well-known gorges and towns,
+      including practical stops and small detours, while still being on or
+      near the route.
+  - id: access-for-rig
+    dimension: constraint_satisfaction
+    title: Access is stated for this rig and is accurate
+    description: >
+      Each stop must say whether the access road suits the stated rig; a
+      four-wheel-drive-only track recommended to a two-wheel-drive rig
+      without warning is a violation.
+    hard: true
+    weight: 1.5
+  - id: interest-alignment
+    dimension: coverage
+    title: Stops match the stated interest
+    description: >
+      The set of stops should serve the stated interest, with the connection
+      made explicit.
+  - id: visitor-evidence
+    dimension: citation_support
+    title: What visitors say is cited and dated
+    description: >
+      Claims about what a place is like should rest on cited, dated visitor
+      reports or authority descriptions.
+  - id: on-route
+    dimension: factual_correctness
+    title: Distances off the route are plausible
+    description: >
+      Stated detour distances should be consistent with the geography.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Give each stop's distance off the route and its access suitability for the rig.
+tags: [poi, discovery, long-tail, corridor]
+difficulty: medium

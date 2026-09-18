@@ -1,0 +1,32 @@
+# Arm (b0): the curated sources around the corridor WITHOUT WikiCamps — the seven non-WikiCamps
+# patterns that carry 'northern-exposure' also carry 'northern-external' (regional body, WA and NT
+# parks agencies, both state tourism sites, Bookeasy operators). Same runner, model and manifold as
+# (a), (b) and (c); the only change from (b) is that WikiCamps pages are not retrievable.
+# edge-search on bookeasylive via its public host: source ~/.owrb-bookeasylive.env after
+# ~/.owrb.env so EDGE_SEARCH_URL / EDGE_SEARCH_API_KEY point there (gateway-scoped key).
+schema_version: 1
+id: northern-campers-b0-external-only
+name: Gemini 3 Flash + edge-search scoped by tag northern-external (curated sources, no WikiCamps), no ontology
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: false
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --tags
+    - northern-external
+    - --disable-ontology
+environment:
+  api_key: OPENROUTER_API_KEY

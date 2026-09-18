@@ -1,0 +1,23 @@
+# Amenities a caravanner or camper may need at an overnight stop.
+- id: dump-point
+  label: a dump point at or near the stop
+- id: water-fill
+  label: potable water to fill tanks
+- id: fuel
+  label: fuel within a short drive
+- id: toilets
+  label: toilets on site
+- id: shade
+  label: shade for a stay of more than one night
+- id: phone-reception
+  label: mobile phone reception
+- id: generators
+  label: permission to run a generator
+- id: pets
+  label: a dog allowed on site
+- id: long-vehicle
+  label: room to get a long vehicle in and out without unhitching
+- id: powered-site
+  label: a powered site
+- id: self-contained
+  label: a spot that suits a self-contained vehicle with no facilities needed

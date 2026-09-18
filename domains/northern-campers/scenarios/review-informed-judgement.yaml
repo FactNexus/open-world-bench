@@ -1,0 +1,79 @@
+schema_version: 1
+id: review-informed-judgement
+name: What travellers say
+version: 0.1.0
+description: >
+  Synthesise recent traveller feedback about camps around a place: positives,
+  complaints, warnings, and where ratings and sentiment disagree. Brief
+  family 4 (review and sentiment advantage).
+prompt: |
+  {{ traveller.description | capitalize }} is deciding where to stay within
+  about {{ radius_km }} km of {{ location.name }},
+  {{ location.state_or_territory }}, in {{ month.label }}, in {{ rig.label }}.
+
+  Summarise what travellers have reported recently about the camps and
+  overnight stops in that area: the common positives, the common complaints,
+  and any warnings about safety, road condition, crowding, toilets, fees,
+  access or management. Point out places that are highly rated overall but
+  have mixed or negative recent comments, and say what a traveller should
+  know before relying on them. Say which places have enough recent feedback
+  to be trusted for planning and which do not. Cite the reports you draw on
+  and give their dates.
+parameters:
+  location:
+    source: location
+  traveller:
+    source: traveller
+  rig:
+    source: rig
+  month:
+    source: month
+  radius_km:
+    provider:
+      type: values
+      values: [50, 100, 150]
+rules:
+  - "(rig.id == 'caravan' and traveller.allow_caravan == 1) or (rig.id == 'van' and traveller.allow_van == 1) or (rig.id == 'fourwd' and traveller.allow_4wd == 1) or (rig.id == 'sedan' and traveller.allow_sedan == 1)"
+  - "not (location.access == 'gibb' and rig.gibb_ok == 0)"
+  - "not (location.access == 'track' and rig.gibb_ok == 0)"
+  - "not (location.access == 'gibb' and month.gibb_open == 0)"
+criteria:
+  - id: recency-stated
+    dimension: source_quality_freshness
+    title: Feedback is recent and its dates are given
+    description: >
+      The synthesis should rest on dated, recent reports and say how recent
+      they are; undated or stale material presented as current is a weakness.
+    hard: true
+    weight: 1.5
+  - id: balance
+    dimension: coverage
+    title: Positives, complaints and warnings are all covered
+    description: >
+      A useful synthesis reports what people liked, what they complained
+      about, and any warnings, not only praise.
+  - id: rating-sentiment-gap
+    dimension: coverage
+    title: Places with strong ratings but mixed recent sentiment are identified
+    description: >
+      The answer should name places where the headline rating and recent
+      comments disagree and explain the discrepancy.
+  - id: reliability
+    dimension: clarity
+    title: Reliability of the evidence is stated per place
+    description: >
+      The answer should distinguish places with enough recent feedback from
+      those with little, rather than treating all equally.
+  - id: grounding
+    dimension: citation_support
+    title: Claims are tied to cited reports
+    description: >
+      Each summarised theme should be traceable to cited reports.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Organise by place, and within each place by positives, complaints and warnings.
+    - Give the date range of the feedback used for each place.
+tags: [reviews, sentiment, trust, camping]
+difficulty: hard

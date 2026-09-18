@@ -1,0 +1,27 @@
+id,name,state_or_territory,region,latitude,longitude,location_type,access,coastal,sampling_weight
+broome,Broome,WA,Kimberley,-17.9614,122.2359,town,sealed,1,3
+dampier-peninsula,Cape Leveque and the Dampier Peninsula,WA,Kimberley,-16.39,122.93,area,track,1,1
+derby,Derby,WA,Kimberley,-17.3033,123.63,town,sealed,1,2
+windjana-gorge,Windjana Gorge,WA,Kimberley,-17.415,124.945,park,gibb,0,2
+tunnel-creek,Tunnel Creek,WA,Kimberley,-17.61,125.15,park,gibb,0,1
+silent-grove-bell-gorge,Silent Grove and Bell Gorge,WA,Kimberley,-17.06,125.24,park,gibb,0,2
+mount-barnett-manning-gorge,Mount Barnett Roadhouse and Manning Gorge,WA,Kimberley,-16.85,125.92,roadhouse,gibb,0,2
+drysdale-river,Drysdale River Station,WA,Kimberley,-15.71,126.38,station,gibb,0,1
+mitchell-falls,Mitchell Falls,WA,Kimberley,-14.82,125.71,park,track,0,1
+kalumburu,Kalumburu,WA,Kimberley,-14.30,126.64,community,track,1,1
+ellenbrae,Ellenbrae Station,WA,Kimberley,-15.96,127.07,station,gibb,0,1
+home-valley,Home Valley Station,WA,Kimberley,-15.68,127.97,station,gibb,0,1
+el-questro,El Questro,WA,Kimberley,-16.01,128.00,station,gibb,0,2
+wyndham,Wyndham,WA,Kimberley,-15.4875,128.1236,town,sealed,1,1
+kununurra,Kununurra,WA,Kimberley,-15.7736,128.7386,town,sealed,0,3
+lake-argyle,Lake Argyle,WA,Kimberley,-16.11,128.74,park,sealed,0,2
+purnululu,Purnululu (Bungle Bungle),WA,Kimberley,-17.45,128.40,park,track,0,2
+halls-creek,Halls Creek,WA,Kimberley,-18.2263,127.6699,town,sealed,0,2
+fitzroy-crossing,Fitzroy Crossing,WA,Kimberley,-18.1978,125.5641,town,sealed,0,2
+geikie-gorge,Danggu Geikie Gorge,WA,Kimberley,-18.10,125.72,park,sealed,0,1
+keep-river,Keep River National Park,NT,Victoria Daly,-15.75,129.10,park,sealed,0,1
+timber-creek,Timber Creek,NT,Victoria Daly,-15.6614,130.4841,town,sealed,0,2
+judbarra-gregory,Judbarra / Gregory National Park,NT,Victoria Daly,-16.20,130.40,park,track,0,1
+victoria-river,Victoria River Roadhouse,NT,Victoria Daly,-15.62,131.13,roadhouse,sealed,0,1
+katherine,Katherine,NT,Katherine,-14.465,132.2635,town,sealed,0,3
+nitmiluk,Nitmiluk (Katherine Gorge),NT,Katherine,-14.32,132.42,park,sealed,0,2

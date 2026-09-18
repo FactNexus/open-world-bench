@@ -1,0 +1,7 @@
+id,persona,description,party_size,children,allow_caravan,allow_van,allow_4wd,allow_sedan,min_nights_per_stop,activities_per_day,sampling_weight
+big-lapper,The Big Lapper,a couple several months into a lap of Australia who plan every stop and prefer remote camps and station stays,2,0,1,1,1,0,2,2,3
+grey-nomad,The Grey Nomad Explorer,a retired couple travelling slowly who stay several nights in each place and rely on other travellers' reviews,2,0,1,1,0,0,3,1,3
+fourwd-adventurer,The 4WD Adventurer,two friends in a four-wheel drive chasing iconic tracks and remote camps who take a lot of photos,2,0,0,0,1,0,1,2,3
+caravan-comfort,The Caravan Comfort Seeker,a couple towing a caravan who prefer caravan parks with powered sites and good amenities and like to book ahead,2,0,1,0,0,0,2,1,2
+budget-nomad,The Backpacker / Budget Nomad,three backpackers in an old van chasing free camps and swimming holes through the dry season,3,0,0,1,0,1,1,2,2
+weekend-wanderer,The Weekend Wanderer,a family from Kununurra after a two-night escape with toilets and shade and water close by,4,2,1,1,1,1,2,2,1

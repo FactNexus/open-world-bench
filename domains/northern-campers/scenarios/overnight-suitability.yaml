@@ -1,0 +1,84 @@
+schema_version: 1
+id: overnight-suitability
+name: Overnight stop suitability
+version: 0.1.0
+description: >
+  Which overnight stops on a leg suit a stated rig and need, and which to
+  avoid. Brief family 2 (campsite suitability).
+prompt: |
+  {{ traveller.description | capitalize }} will drive from
+  {{ leg.origin_name }} to {{ leg.destination_name }} via {{ leg.route }}
+  in {{ month.label }}, in {{ rig.label }}. They need {{ need.label }}.
+
+  Which overnight stops along this route are the most suitable for them, and
+  why? Give at least {{ recommendation_count }} suitable stops with what each
+  offers, what it costs and when that was reported, and how recent the
+  traveller feedback is. Then list stops on this route they should avoid
+  with this rig or need, and say why. Be specific about access: road
+  surface, site size, whether a towed van can get in and turn around. Cite a
+  source next to each claim and say where you could not verify.
+parameters:
+  leg:
+    source: leg
+  traveller:
+    source: traveller
+  rig:
+    source: rig
+  need:
+    source: need
+  month:
+    source: month
+  recommendation_count:
+    provider:
+      type: values
+      values: [3, 4, 5]
+rules:
+  - "not (leg.fourwd_only == 1 and rig.gibb_ok == 0)"
+  - "not (leg.gibb == 1 and month.gibb_open == 0)"
+  - "(rig.id == 'caravan' and traveller.allow_caravan == 1) or (rig.id == 'van' and traveller.allow_van == 1) or (rig.id == 'fourwd' and traveller.allow_4wd == 1) or (rig.id == 'sedan' and traveller.allow_sedan == 1)"
+  - "not (need.id == 'powered-site' and traveller.id == 'budget-nomad')"
+  - "not (need.id == 'self-contained' and rig.id == 'sedan')"
+  - "not (need.id == 'long-vehicle' and rig.towing == 0)"
+criteria:
+  - id: need-evidence
+    dimension: constraint_satisfaction
+    title: Every recommended stop is shown to meet the stated need
+    description: >
+      Each suitable stop must have explicit evidence that it provides the
+      stated need. A stop presented as suitable without that evidence is a
+      violation.
+    hard: true
+    weight: 2.0
+  - id: rig-access
+    dimension: constraint_satisfaction
+    title: Access suits the rig, with the reason given
+    description: >
+      Suitability must be argued from access and site characteristics for
+      this rig, not assumed.
+    hard: true
+    weight: 1.5
+  - id: avoid-list
+    dimension: coverage
+    title: Stops to avoid are named with reasons
+    description: >
+      The answer should name stops on the route that are poor for this rig or
+      need and explain why.
+  - id: recency
+    dimension: source_quality_freshness
+    title: Judgement rests on recent traveller feedback
+    description: >
+      Claims about facilities and conditions should cite recent, dated
+      reports; the answer should say how recent its evidence is.
+  - id: cost-dated
+    dimension: citation_support
+    title: Fees are quoted with their report date
+    description: >
+      Each fee should carry a source and the date it was observed.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Separate suitable stops from stops to avoid and give reasons for both.
+    - Quote fees with the date they were reported.
+tags: [camping, suitability, amenities, rig]
+difficulty: medium

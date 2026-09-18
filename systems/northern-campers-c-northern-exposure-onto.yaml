@@ -1,0 +1,30 @@
+# Arm (c): as (b) with the austourism ontology leg in gated mode (plus partial-AND, as deployed). The only change from (b) is the ontology.
+# edge-search on bookeasylive via its public host: source ~/.owrb-bookeasylive.env after
+# ~/.owrb.env so EDGE_SEARCH_URL / EDGE_SEARCH_API_KEY point there (gateway-scoped key).
+schema_version: 1
+id: northern-campers-c-northern-exposure-onto
+name: Gemini 3 Flash + edge-search scoped by tag northern-exposure, ontology gated
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --tags
+    - northern-exposure
+    - --ontology-mode
+    - gated
+environment:
+  api_key: OPENROUTER_API_KEY

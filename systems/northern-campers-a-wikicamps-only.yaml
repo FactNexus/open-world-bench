@@ -1,0 +1,29 @@
+# Arm (a): the WikiCamps markdown corpus alone. Same runner, model and manifold as (b) and (c); only pages tagged 'wikicamps' are retrievable and the ontology leg is off.
+# edge-search on bookeasylive via its public host: source ~/.owrb-bookeasylive.env after
+# ~/.owrb.env so EDGE_SEARCH_URL / EDGE_SEARCH_API_KEY point there (gateway-scoped key).
+schema_version: 1
+id: northern-campers-a-wikicamps-only
+name: Gemini 3 Flash + edge-search scoped to WikiCamps pages only (tag wikicamps), no ontology
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: false
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --tags
+    - wikicamps
+    - --disable-ontology
+environment:
+  api_key: OPENROUTER_API_KEY

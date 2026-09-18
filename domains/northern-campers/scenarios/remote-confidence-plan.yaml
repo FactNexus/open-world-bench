@@ -1,0 +1,84 @@
+schema_version: 1
+id: remote-confidence-plan
+name: Remote travel confidence plan
+version: 0.1.0
+description: >
+  A risk-aware plan for a leg: where amenities are sparse, backup overnight
+  options, and what to check before committing, given the month. Shoulder
+  months are allowed here on purpose. Brief family 5 (practical remote
+  travel confidence).
+prompt: |
+  {{ traveller.description | capitalize }} will drive from
+  {{ leg.origin_name }} to {{ leg.destination_name }} via {{ leg.route }} in
+  {{ month.label }}, in {{ rig.label }}. It is their first time on this
+  route and they need {{ need.label }} at their overnight stops.
+
+  Write a risk-aware plan for them. Identify the sections of the route where
+  water, fuel, food, toilets and phone reception are sparse and where they
+  must plan ahead. For each planned overnight stop give a backup option in
+  case it is full, closed or inaccessible. Say what should be checked before
+  committing in {{ month.label }}: road status, seasonal closures, river
+  crossings, permits, and camps with little recent feedback. Be clear about
+  where the evidence is strong and where it is thin. Cite sources close to
+  the claims.
+parameters:
+  leg:
+    source: leg
+  traveller:
+    source: traveller
+  rig:
+    source: rig
+  need:
+    source: need
+  month:
+    source: month
+rules:
+  - "not (leg.fourwd_only == 1 and rig.gibb_ok == 0)"
+  - "(rig.id == 'caravan' and traveller.allow_caravan == 1) or (rig.id == 'van' and traveller.allow_van == 1) or (rig.id == 'fourwd' and traveller.allow_4wd == 1) or (rig.id == 'sedan' and traveller.allow_sedan == 1)"
+  - "not (need.id == 'long-vehicle' and rig.towing == 0)"
+  - "traveller.id != 'weekend-wanderer'"
+criteria:
+  - id: backup-options
+    dimension: constraint_satisfaction
+    title: Every planned overnight stop has a named backup
+    description: >
+      Each overnight stop must come with a specific alternative in case it is
+      full, closed or unreachable. A stop without a backup is a violation.
+    hard: true
+    weight: 1.5
+  - id: checks-before-committing
+    dimension: constraint_satisfaction
+    title: Pre-trip checks are specific to the month and route
+    description: >
+      The plan must say what to check for this month: road status, seasonal
+      closures, crossings, permits, and where to check it. Generic advice
+      without route-specific checks is a violation.
+    hard: true
+    weight: 1.5
+  - id: sparse-sections
+    dimension: coverage
+    title: Sparse-amenity sections are identified with distances
+    description: >
+      The plan should name the stretches without water, fuel, food or
+      reception and their approximate length.
+  - id: evidence-confidence
+    dimension: clarity
+    title: Strong and thin evidence are distinguished
+    description: >
+      The plan should say where its information is well supported and where
+      it rests on little or old feedback.
+  - id: currency
+    dimension: source_quality_freshness
+    title: Seasonal and road claims cite current authorities or dated reports
+    description: >
+      Road and closure claims should rest on authority pages or dated recent
+      reports, and the answer should not claim a road is open without such
+      support.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Give a backup for every overnight stop.
+    - Distinguish confirmed facts from things the traveller must check.
+tags: [remote, safety, planning, confidence]
+difficulty: hard

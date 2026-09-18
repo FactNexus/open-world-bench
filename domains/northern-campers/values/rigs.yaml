@@ -1,0 +1,22 @@
+# Road suitability is judged per rig (Len Goold): caravan vs van vs 4WD vs sedan.
+# gibb_ok: whether the rig belongs on the Gibb River Road and other unsealed legs.
+- id: caravan
+  label: an off-road-rated caravan towed behind a four-wheel drive
+  short: off-road caravan
+  gibb_ok: 1
+  towing: 1
+- id: van
+  label: a two-wheel-drive campervan they also sleep in
+  short: 2WD campervan
+  gibb_ok: 0
+  towing: 0
+- id: fourwd
+  label: a four-wheel drive with a rooftop tent
+  short: 4WD with rooftop tent
+  gibb_ok: 1
+  towing: 0
+- id: sedan
+  label: a two-wheel-drive car with a tent
+  short: 2WD car and tent
+  gibb_ok: 0
+  towing: 0

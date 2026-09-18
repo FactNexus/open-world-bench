@@ -1,0 +1,74 @@
+schema_version: 1
+id: northern-campers
+name: Northern campers (Broome to Katherine)
+description: >
+  Caravanners and campers on long regional trips through the Kimberley and the
+  Victoria Highway district: Broome, the Gibb River Road, Kununurra and
+  Katherine. Scenarios ask for touring plans, overnight suitability by rig,
+  long-tail stops, review-informed judgement, remote-travel confidence and
+  camping budgets, for the traveller segments WikiCamps serves.
+version: 0.1.0
+default_locale: en-AU
+default_timezone: Australia/Perth
+templates:
+  - scenarios/*.yaml
+parameters:
+  location:
+    description: A place on the corridor used as a scenario base.
+    provider:
+      type: csv
+      path: values/locations.csv
+      options:
+        id_field: id
+        weight_field: sampling_weight
+  leg:
+    description: A route between two corridor endpoints with its distance, surface and typical duration.
+    provider:
+      type: csv
+      path: values/legs.csv
+      options:
+        id_field: id
+        weight_field: sampling_weight
+  traveller:
+    description: A WikiCamps user segment (the CEO's personas), with rig compatibility and pace.
+    provider:
+      type: csv
+      path: values/travellers.csv
+      options:
+        id_field: id
+        weight_field: sampling_weight
+  rig:
+    provider:
+      type: yaml_list
+      path: values/rigs.yaml
+  interest:
+    provider:
+      type: yaml_list
+      path: values/interests.yaml
+  need:
+    provider:
+      type: yaml_list
+      path: values/needs.yaml
+  budget:
+    provider:
+      type: yaml_list
+      path: values/budgets.yaml
+  month:
+    provider:
+      type: yaml_list
+      path: values/months.yaml
+source_policy: source-policy.yaml
+licence: MIT for authored templates; source datasets retain their own licences
+attribution: []
+metadata:
+  maturity: alpha
+  intended_public_release: false
+  location_snapshot:
+    source: hand-curated by the pack author from general geographic knowledge (no database extracts)
+    snapshot_date: "2026-09-17"
+    coordinate_precision: approximate (1 to 5 km); scenario-generation input only, never evidence
+    row_count: 26
+  stakeholder_input:
+    - WikiCamps brief (amended 2026-09-16), question families 1 to 6
+    - Len Goold, WikiCamps, 2026-09-16 (user group, interests, pace)
+    - WikiCamps CEO personas, 2026-09-17 (traveller segments)

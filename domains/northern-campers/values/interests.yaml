@@ -1,0 +1,25 @@
+# Len Goold's list for WikiCamps users, 2026-09-16. Walks split by length.
+- id: scenery
+  label: natural features and scenery
+- id: wildlife
+  label: wildlife
+- id: community-vibe
+  label: community around the camp, such as shared campfires, communal cooking and campsite events, and what the vibe is like
+- id: provisions-fuel
+  label: where provisions and fuel can be bought and how far apart they are
+- id: fishing
+  label: fishing
+- id: local-history
+  label: local history and historic sites
+- id: indigenous-heritage
+  label: Indigenous history, sites and art
+- id: rides
+  label: sightseeing boat, helicopter and plane rides
+- id: swimming-holes
+  label: swimming holes and river access
+- id: walk-short
+  label: short walks of about forty minutes
+- id: walk-medium
+  label: walks of about three hours
+- id: walk-long
+  label: all-day or overnight walks

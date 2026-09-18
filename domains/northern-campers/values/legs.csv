@@ -1,0 +1,10 @@
+id,name,origin_name,destination_name,route,km,fourwd_only,gibb,days_min,days_max,sampling_weight
+katherine-derby-gibb,Katherine to Derby via the Gibb River Road,Katherine,Derby,the Victoria Highway to Kununurra then the Gibb River Road,1100,1,1,7,14,3
+kununurra-derby-gibb,Kununurra to Derby via the Gibb River Road,Kununurra,Derby,the Gibb River Road,700,1,1,5,12,3
+derby-kununurra-gibb,Derby to Kununurra via the Gibb River Road,Derby,Kununurra,the Gibb River Road,700,1,1,5,12,2
+derby-mitchell-falls,Derby to Mitchell Falls and back to the Gibb,Derby,Mitchell Falls,the Gibb River Road and the Kalumburu Road,700,1,1,5,10,1
+broome-kununurra-highway,Broome to Kununurra via the Great Northern Highway,Broome,Kununurra,the Great Northern Highway via Fitzroy Crossing and Halls Creek,1050,0,0,4,8,2
+broome-katherine-highway,Broome to Katherine on sealed roads,Broome,Katherine,the Great Northern Highway and the Victoria Highway,1870,0,0,7,14,2
+fitzroy-kununurra-highway,Fitzroy Crossing to Kununurra via the Great Northern Highway,Fitzroy Crossing,Kununurra,the Great Northern Highway via Halls Creek and Purnululu,660,0,0,3,6,1
+kununurra-katherine-highway,Kununurra to Katherine via the Victoria Highway,Kununurra,Katherine,the Victoria Highway via Timber Creek,510,0,0,2,5,2
+katherine-kununurra-highway,Katherine to Kununurra via the Victoria Highway,Katherine,Kununurra,the Victoria Highway via Timber Creek,510,0,0,2,5,1

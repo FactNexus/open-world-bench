@@ -47,6 +47,7 @@ class EvidenceStore:
         resolver: Resolver = default_resolver,
         min_host_interval: float = 1.0,
         timeout_seconds: float = 20.0,
+        gateways: list[dict[str, Any]] | None = None,
     ) -> None:
         try:
             import httpx
@@ -62,6 +63,10 @@ class EvidenceStore:
         self.timeout_seconds = timeout_seconds
         self._host_last_fetch: dict[str, float] = {}
         self._lock = asyncio.Lock()
+        # Candidate-owned pages that the evaluator cannot reach directly (a loopback
+        # md-site behind a private index, for example) are fetched through a public
+        # gateway endpoint instead; the record says so (SPEC.md 15.5).
+        self.gateways = [dict(g) for g in (gateways or [])]
         (directory / "objects").mkdir(parents=True, exist_ok=True)
 
     def _record_path(self, key: str) -> Path:
@@ -108,7 +113,95 @@ class EvidenceStore:
         self._store(url, record, text)
         return record, text
 
+    def _gateway_for(self, url: str) -> dict[str, Any] | None:
+        for gateway in self.gateways:
+            if url.startswith(str(gateway.get("match_prefix", ""))) and gateway.get("match_prefix"):
+                return gateway
+        return None
+
+    async def _fetch_via_gateway(
+        self, url: str, gateway: dict[str, Any]
+    ) -> tuple[EvidenceRecord, str]:
+        """Fetch a page through an edge-search gateway (POST /v1/gateway/fetch).
+
+        The page URL is exempt from the address checks; the gateway endpoint is
+        operator configuration and is trusted as written. The returned markdown is
+        treated as the page body; provenance is written into the record's warning
+        field so the audit trail shows the page did not come from a direct fetch."""
+        import os
+
+        endpoint = str(gateway["endpoint"])
+        # The endpoint is operator configuration from the suite file, not a
+        # candidate-supplied URL, so it is trusted as written: inside a VPC the
+        # public hostname of the gateway host legitimately resolves to a private
+        # address. Only the scheme is checked.
+        if urlsplit(endpoint).scheme.lower() not in ("http", "https"):
+            return _record(url, url, "invalid", warning=f"gateway endpoint has unsupported scheme: {endpoint}"), ""
+        key_env = str(gateway.get("api_key_env", ""))
+        api_key = os.environ.get(key_env, "") if key_env else ""
+        if key_env and not api_key:
+            return _record(url, url, "blocked", warning=f"gateway key {key_env} is not set"), ""
+        note = f"via gateway {endpoint} (manifold {gateway.get('manifold_id')})"
+        await self._politeness_delay(urlsplit(endpoint).hostname or "")
+        async with self._httpx.AsyncClient(
+            transport=self.transport,
+            timeout=self.timeout_seconds,
+            headers={"user-agent": USER_AGENT, **({"authorization": f"Bearer {api_key}"} if api_key else {})},
+        ) as client:
+            try:
+                response = await client.post(
+                    endpoint,
+                    json={
+                        "url": url,
+                        "manifold_id": int(gateway.get("manifold_id", 0)),
+                        "accept": str(gateway.get("accept", "markdown")),
+                    },
+                )
+            except self._httpx.HTTPError as error:
+                return _record(url, url, "missing", warning=f"gateway fetch error: {error}; {note}"), ""
+        if response.status_code in (401, 403):
+            return _record(url, url, "blocked", response.status_code, warning=note), ""
+        if response.status_code != 200:
+            return _record(url, url, "missing", response.status_code, warning=note), ""
+        try:
+            payload = response.json()
+        except ValueError:
+            return _record(url, url, "unextractable", 200, warning=f"gateway returned non-JSON; {note}"), ""
+        upstream_status = int(payload.get("status") or 0)
+        content = payload.get("content")
+        if not isinstance(content, str):
+            content = orjson.dumps(content).decode("utf-8") if content is not None else ""
+        if upstream_status in (401, 403, 429):
+            return _record(url, url, "blocked", upstream_status, warning=note), ""
+        if upstream_status >= 400 or not upstream_status:
+            return _record(url, url, "missing", upstream_status or None, warning=note), ""
+        body = content.encode("utf-8")[:MAX_CONTENT_BYTES]
+        text = body.decode("utf-8", errors="replace").strip()
+        if not text:
+            return _record(url, url, "unextractable", upstream_status, warning=f"no extractable text; {note}"), ""
+        title = None
+        for line in text.splitlines():
+            if line.startswith("# "):
+                title = line[2:].strip(); break
+        content_type = str(payload.get("content_type") or "text/markdown").split(";")[0].strip()
+        record = EvidenceRecord(
+            url=url,
+            final_url=None,
+            status="reachable",
+            http_status=upstream_status,
+            content_type=content_type,
+            content_hash=hashlib.sha256(body).hexdigest(),
+            title=title,
+            retrieved_at=datetime.now(tz=UTC),
+            text_length=len(text),
+            warning=note,
+        )
+        return record, text
+
     async def _fetch(self, url: str) -> tuple[EvidenceRecord, str]:
+        gateway = self._gateway_for(url)
+        if gateway is not None:
+            return await self._fetch_via_gateway(url, gateway)
         current_url = url
         async with self._httpx.AsyncClient(
             transport=self.transport,

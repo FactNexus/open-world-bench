@@ -1,0 +1,112 @@
+schema_version: 1
+id: corridor-trip-plan
+name: Corridor touring plan
+version: 0.1.0
+description: >
+  Plan a multi-day self-drive camping trip along a corridor leg for a stated
+  rig and pace, with camps, dump points, water, fuel and must-see stops.
+  Brief family 1 (trip planning quality).
+prompt: |
+  {{ traveller.description | capitalize }} is planning a {{ trip_days }}-day
+  trip from {{ leg.origin_name }} to {{ leg.destination_name }} via
+  {{ leg.route }} in {{ month.label }}. They are travelling in
+  {{ rig.label }}, want {{ budget.label }}, and do not want to drive more
+  than about {{ km_per_day }} km in a day. Their main interest along the way
+  is {{ interest.label }}.
+
+  Plan the trip day by day: where each night is spent, how far each day's
+  drive is, and where they can refill water, empty a toilet cassette or
+  black tank, and buy fuel and supplies. Stay more than one night where the
+  place deserves it, and keep to one or two activities a day. Recommend
+  must-see stops between the camps, not only at the endpoints. For each camp
+  say whether it suits this rig and why, what it costs and when that price was
+  last reported, and whether it is open in {{ month.label }}. Cite a source
+  close to every fee, closure and road-condition claim, and say where you
+  could not verify something.
+parameters:
+  leg:
+    source: leg
+  traveller:
+    source: traveller
+  rig:
+    source: rig
+  interest:
+    source: interest
+  budget:
+    source: budget
+  month:
+    source: month
+  trip_days:
+    provider:
+      type: values
+      values: [5, 7, 10, 12, 14]
+  km_per_day:
+    provider:
+      type: values
+      values: [200, 250, 300]
+rules:
+  - "trip_days >= leg.days_min and trip_days <= leg.days_max"
+  - "trip_days * km_per_day >= leg.km * 1.2"
+  - "not (leg.fourwd_only == 1 and rig.gibb_ok == 0)"
+  - "not (leg.gibb == 1 and month.gibb_open == 0)"
+  - "(rig.id == 'caravan' and traveller.allow_caravan == 1) or (rig.id == 'van' and traveller.allow_van == 1) or (rig.id == 'fourwd' and traveller.allow_4wd == 1) or (rig.id == 'sedan' and traveller.allow_sedan == 1)"
+  - "not (budget.id == 'comfort' and traveller.id == 'budget-nomad')"
+  - "not (budget.id == 'free-first' and traveller.id == 'caravan-comfort')"
+criteria:
+  - id: route-feasibility
+    dimension: constraint_satisfaction
+    title: The route is drivable within the daily limit and the days given
+    description: >
+      Stops must be in a sensible order along the leg, every driving day must
+      stay within about the stated kilometre limit, and the whole trip must fit
+      the number of days. A day that clearly exceeds the limit, or a route that
+      cannot be completed in time, is a violation.
+    hard: true
+    weight: 2.0
+  - id: rig-suitability
+    dimension: constraint_satisfaction
+    title: Every overnight stop suits the stated rig
+    description: >
+      Each camp must be usable by this rig, with the reason given: access
+      road surface, site size, whether towing or a two-wheel drive is
+      practical. A camp recommended without regard to the rig is a violation.
+    hard: true
+    weight: 1.5
+  - id: essentials-spacing
+    dimension: coverage
+    title: Water, dump points, fuel and supplies are placed along the route
+    description: >
+      The plan should say where tanks can be filled, cassettes emptied and fuel
+      and food bought, and flag the longest stretch without them.
+  - id: pace-and-activities
+    dimension: constraint_satisfaction
+    title: Multi-night stays and one or two activities a day
+    description: >
+      The plan should stay more than one night where warranted and not pack
+      more than two activities into a day.
+  - id: costs-dated
+    dimension: citation_support
+    title: Camp fees are stated with the date they were reported
+    description: >
+      Each fee should carry a source and the date the price was observed;
+      an undated price presented as current is a weakness.
+  - id: openness
+    dimension: source_quality_freshness
+    title: Seasonal status of camps and roads is supported by recent sources
+    description: >
+      Claims that a camp or road is open in the stated month should rest on
+      recent authority or dated traveller reports.
+  - id: interest-alignment
+    dimension: coverage
+    title: Stops along the way match the stated interest
+    description: >
+      Recommended stops should serve the interest and lie between camps, not
+      only at the endpoints.
+answer_contract:
+  format: markdown
+  citations_required: true
+  instructions:
+    - Present the plan day by day, stating where each night is spent and the approximate distance driven.
+    - Quote fees with the date they were reported and mark anything unverified.
+tags: [itinerary, camping, corridor, routing]
+difficulty: hard

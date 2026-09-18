@@ -1,0 +1,23 @@
+schema_version: 1
+principles:
+  - Match source authority to the claim rather than applying a universal domain ranking.
+  - Parks agencies, road authorities and government sources are preferred for closures, permits, road status and regulations.
+  - Operators and station owners are authoritative for their own prices, booking rules, opening dates and facilities.
+  - Dated, voted, high-volume crowd-sourced reports are suitable evidence for what a camp is like, what people paid, track conditions as experienced, amenities as found, and recent changes, provided the date is quoted with the claim.
+  - A lone undated review supports subjective character only and is not sufficient for safety, access or price claims.
+  - Recency matters more than authority for conditions that change with the season.
+source_classes:
+  government_authority:
+    default_score: 1.0
+  official_tourism_body:
+    default_score: 0.8
+  attraction_or_accommodation_operator:
+    default_score: 0.9
+  transport_operator:
+    default_score: 0.9
+  established_editorial_guide:
+    default_score: 0.6
+  structured_crowd_sourced:
+    default_score: 0.7
+  user_generated:
+    default_score: 0.4

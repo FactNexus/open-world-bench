@@ -144,3 +144,67 @@ def test_bundle_freezes_union_of_urls(tmp_path: Path) -> None:
     bundle_path = tmp_path / "bundles" / "scenario-1.bundle.json"
     assert bundle_path.is_file()
     assert evidence_key("https://example.com/a") in bundle_path.read_text("utf-8")
+
+
+GATEWAY = {
+    "match_prefix": "http://127.0.0.1:8001/",
+    "endpoint": "https://edge.example.com/v1/gateway/fetch",
+    "manifold_id": 42,
+    "api_key_env": "OWRB_TEST_GATEWAY_KEY",
+}
+
+
+def test_loopback_page_is_fetched_through_the_gateway(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("OWRB_TEST_GATEWAY_KEY", "k-test")
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["auth"] = request.headers.get("authorization")
+        seen["body"] = request.read()
+        return httpx.Response(
+            200,
+            json={
+                "status": 200,
+                "content_type": "text/markdown; charset=utf-8",
+                "content": "# Windjana Gorge Campground\n\n- **Type**: Campground\n",
+                "provenance": {"source": "md-proxy"},
+            },
+        )
+
+    store = EvidenceStore(
+        tmp_path / "evidence",
+        transport=httpx.MockTransport(handler),
+        resolver=resolve_public,
+        min_host_interval=0,
+        gateways=[GATEWAY],
+    )
+    record, text = asyncio.run(store.get("http://127.0.0.1:8001/1001.md"))
+    assert record.status == "reachable"
+    assert record.title == "Windjana Gorge Campground"
+    assert "Campground" in text
+    assert record.warning and "via gateway" in record.warning
+    assert seen["url"] == GATEWAY["endpoint"]
+    assert seen["auth"] == "Bearer k-test"
+    assert b'"manifold_id":42' in seen["body"].replace(b" ", b"")
+
+
+def test_loopback_page_without_gateway_is_still_rejected(tmp_path: Path) -> None:
+    store, _ = make_store(tmp_path, lambda request: httpx.Response(200, text="x"))
+    record, text = asyncio.run(store.get("http://127.0.0.1:8001/1001.md"))
+    assert record.status == "invalid"
+    assert text == ""
+
+
+def test_gateway_upstream_error_is_classified(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("OWRB_TEST_GATEWAY_KEY", "k-test")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"status": 404, "content_type": "text/plain", "content": "", "provenance": {}})
+
+    store = EvidenceStore(
+        tmp_path / "evidence", transport=httpx.MockTransport(handler), resolver=resolve_public,
+        min_host_interval=0, gateways=[GATEWAY],
+    )
+    record, _ = asyncio.run(store.get("http://127.0.0.1:8001/missing.md"))
+    assert record.status == "missing" and record.http_status == 404

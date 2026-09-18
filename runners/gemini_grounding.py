@@ -99,15 +99,29 @@ def main() -> int:
     grounding = candidate.get("groundingMetadata") or {}
     citations: list[dict] = []
     seen: set[str] = set()
+    # Grounding chunks cite Google's redirect links (vertexaisearch.cloud.google.com),
+    # which the evaluator cannot read. Resolve each to the page it lands on so the
+    # citation names the real source; keep the redirect if resolution fails.
+    resolver = httpx.Client(follow_redirects=True, timeout=10.0, headers={"user-agent": "owrb-runner/0.1"})
     for chunk in grounding.get("groundingChunks") or []:
         web = chunk.get("web") or {}
         url = web.get("uri")
-        if url and url not in seen:
+        if not url:
+            continue
+        if "vertexaisearch.cloud.google.com" in url:
+            try:
+                head = resolver.head(url)
+                if head.url and str(head.url) != url:
+                    url = str(head.url)
+            except httpx.HTTPError:
+                pass
+        if url not in seen:
             seen.add(url)
             citation: dict = {"url": url}
             if web.get("title"):
                 citation["title"] = web["title"]
             citations.append(citation)
+    resolver.close()
 
     usage = response.get("usageMetadata") or {}
     searches = len(grounding.get("webSearchQueries") or [])

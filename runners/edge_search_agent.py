@@ -5,7 +5,7 @@ The model (any OpenAI-compatible chat model via OpenRouter) is given two
 retrieval tools backed by an edge-search manifold — ranked URL search and a
 content pack — plus a ``submit_answer`` tool that ends the episode. One
 script serves every model+edge-search system; fairness between systems comes
-from varying only argv (model, manifold, --disable-ontology), never code.
+from varying only argv (model, manifold, --disable-ontology, --tags), never code.
 
     stdin  <- {"scenario_instance_id": ..., "prompt": ..., "answer_contract": {...}}
     stdout -> {"answer": ..., "citations": [...], "metrics": {...}, "trace": [...]}
@@ -136,10 +136,16 @@ class EdgeSearch:
         manifold_id: int,
         disable_ontology: bool,
         ontology_mode: str | None = None,
+        tags: list[str] | None = None,
+        tag_mode: str | None = None,
     ):
         self.manifold_id = manifold_id
         self.disable_ontology = disable_ontology
         self.ontology_mode = ontology_mode
+        # Tag scoping: only pages carrying these tags are retrievable. Same
+        # mechanism the MCP server applies to a partner session server-side.
+        self.tags = [t for t in (tags or []) if t]
+        self.tag_mode = tag_mode
         self.client = httpx.Client(
             base_url=base_url,
             headers={"Authorization": f"Bearer {api_key}"},
@@ -164,6 +170,8 @@ class EdgeSearch:
                 "top_k": max(1, min(int(top_k or 8), 20)),
                 "disable_ontology": self.disable_ontology,
                 **({"ontology_mode": self.ontology_mode} if self.ontology_mode else {}),
+                **({"tags": self.tags} if self.tags else {}),
+                **({"tag_mode": self.tag_mode} if self.tags and self.tag_mode else {}),
             },
         )
         r.raise_for_status()
@@ -190,6 +198,8 @@ class EdgeSearch:
                 "token_limit": 5000,
                 "disable_ontology": self.disable_ontology,
                 **({"ontology_mode": self.ontology_mode} if self.ontology_mode else {}),
+                **({"tags": self.tags} if self.tags else {}),
+                **({"tag_mode": self.tag_mode} if self.tags and self.tag_mode else {}),
             },
         )
         r.raise_for_status()
@@ -243,6 +253,8 @@ def main() -> int:
     ap.add_argument("--disable-ontology", action="store_true")
     ap.add_argument("--ontology-mode", choices=["off", "gated", "always"], default=None)
     ap.add_argument("--max-steps", type=int, default=12)
+    ap.add_argument("--tags", default="", help="comma-separated tag names; restricts retrieval to pages carrying them")
+    ap.add_argument("--tag-mode", choices=["any", "all"], default=None)
     args = ap.parse_args()
 
     request = json.loads(sys.stdin.read())
@@ -257,6 +269,8 @@ def main() -> int:
         args.manifold,
         args.disable_ontology,
         args.ontology_mode,
+        [t.strip() for t in args.tags.split(",") if t.strip()],
+        args.tag_mode,
     )
     or_client = httpx.Client(
         headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"},

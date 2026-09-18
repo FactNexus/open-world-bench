@@ -1,0 +1,66 @@
+# WikiCamps / northern-campers: is WikiCamps' data better than what web-search AI
+# gives a caravanner or camper on the Broome to Katherine corridor?
+#
+# Arms, one variable per step: (a) WikiCamps pages only, (b0) the other curated
+# sources without WikiCamps, (b) both together, (c) + ontology; (d) GPT-5.6 with OpenAI web search;
+# (e) Gemini with Google Search grounding. Judge is Claude (no family overlap
+# with any candidate).
+#
+# Before running (on launchlive):
+#   source ~/.owrb.env && source ~/.owrb-bookeasylive.env
+#   (edge-search + md-proxy on bookeasylive serve the corpus; no tunnel needed)
+schema_version: 1
+id: northern-campers-pilot
+name: Northern campers pilot (one instance per template, pipeline check)
+domain:
+  id: northern-campers
+  path: domains/northern-campers
+scenario_generation:
+  seed: 20260917
+  count: 6
+  template_quotas:
+    corridor-trip-plan: 1
+    overnight-suitability: 1
+    hidden-poi: 1
+    review-informed-judgement: 1
+    remote-confidence-plan: 1
+    budget-plan: 1
+systems:
+  - systems/northern-campers-a-wikicamps-only.yaml
+  - systems/northern-campers-b0-external-only.yaml
+  - systems/northern-campers-b-northern-exposure.yaml
+  - systems/northern-campers-c-northern-exposure-onto.yaml
+  - systems/openai-gpt56-luna-web-search.yaml
+  - systems/gemini-native-grounding.yaml
+repetitions: 1
+randomise_system_order: true
+concurrency: 2
+run_timeout_seconds: 600
+evaluation:
+  quality_weights:
+    constraint_satisfaction: 25
+    citation_support: 25
+    factual_correctness: 20
+    coverage: 15
+    source_quality_freshness: 10
+    clarity: 5
+  hard_constraint_score_cap: 49
+  evidence_cache: true
+  # Pages cited by loopback URL (the md-sites behind the Bookeasy manifold) are
+  # fetched through edge-search's gateway; the evidence record says so.
+  evidence_gateways:
+    - match_prefix: "http://127.0.0.1:8001/"
+      endpoint: https://edge.bookeasy.dev.retrievable.ai/v1/gateway/fetch
+      manifold_id: 13
+      api_key_env: EDGE_SEARCH_API_KEY
+    - match_prefix: "http://127.0.0.1:8000/"
+      endpoint: https://edge.bookeasy.dev.retrievable.ai/v1/gateway/fetch
+      manifold_id: 13
+      api_key_env: EDGE_SEARCH_API_KEY
+  judge:
+    adapter: openrouter
+    model: anthropic/claude-opus-4.8
+reporting:
+  static_html: true
+  export_json: true
+  export_csv: true
