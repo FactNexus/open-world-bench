@@ -93,7 +93,24 @@ def main() -> int:
         part.get("text", "") for part in candidate.get("content", {}).get("parts", [])
     ).strip()
     if not answer:
-        print("empty answer", file=sys.stderr)
+        # Grounded generations occasionally come back with no text part (a
+        # finishReason such as SAFETY or RECITATION, or an empty candidate). One
+        # fresh attempt recovers most of these; if it is still empty, fail with
+        # the reason recorded.
+        reason = candidate.get("finishReason")
+        try:
+            with httpx.Client(timeout=300.0) as client:
+                r = client.post(f"{BASE}/{args.model}:generateContent", params={"key": api_key}, json=body)
+                r.raise_for_status()
+                retry = r.json()
+            cand2 = retry["candidates"][0]
+            answer = "".join(part.get("text", "") for part in cand2.get("content", {}).get("parts", [])).strip()
+            if answer:
+                candidate, response = cand2, retry
+        except (httpx.HTTPError, KeyError, IndexError, ValueError) as e:
+            print(f"retry after empty answer failed: {_redact(str(e))}", file=sys.stderr)
+    if not answer:
+        print(f"empty answer (finishReason={reason})", file=sys.stderr)
         return 1
 
     grounding = candidate.get("groundingMetadata") or {}

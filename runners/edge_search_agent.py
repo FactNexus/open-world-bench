@@ -238,9 +238,16 @@ def chat(client: httpx.Client, model: str, messages: list[dict], force_submit: b
             last_err = RuntimeError(f"no choices in response: {json.dumps(data)[:200]}")
         except (httpx.HTTPStatusError, httpx.TransportError) as e:  # transient 429/5xx/network
             status = getattr(getattr(e, "response", None), "status_code", None)
-            if status is not None and status < 500 and status != 429:
+            if status is not None and status < 500 and status not in (400, 429):
                 raise
-            last_err = e
+            if status == 400:
+                # A 400 from OpenRouter is usually the upstream provider rejecting the
+                # request shape (tool-call sequence, tool_choice). It can be routing-
+                # dependent, so retry like a transient; carry the body for diagnosis.
+                body_text = getattr(e.response, "text", "")[:400]
+                last_err = RuntimeError(f"400 from OpenRouter: {body_text}")
+            else:
+                last_err = e
         if attempt < 2:
             time.sleep(2 ** (attempt + 1))
     raise RuntimeError(f"OpenRouter unavailable after retries: {last_err}")
@@ -373,10 +380,30 @@ def main() -> int:
                 "memory-only answer",
                 file=sys.stderr,
             )
+        print("trace: " + json.dumps(trace)[:4000], file=sys.stderr)
         return 1
 
+    if not answer and es.ok_calls:
+        # The step budget was spent on retrieval and the forced submit_answer did
+        # not produce one (some providers ignore tool_choice). One closing call with
+        # no tools available makes the model write the answer from what it has read;
+        # citations come from the pages it actually read. Same budget for every arm.
+        trace.append({"action": "final_answer_without_tools"})
+        try:
+            closing = list(messages) + [{"role": "user", "content": "You have no more tool calls. Write your final answer now in markdown, using only what you have already retrieved, and list the URLs you relied on."}]
+            body = {"model": args.model, "messages": closing, "usage": {"include": True}, "temperature": 0}
+            r = or_client.post(OPENROUTER_URL, json=body); r.raise_for_status(); data = r.json()
+            usage = data.get("usage") or {}
+            metrics["input_tokens"] += usage.get("prompt_tokens") or 0
+            metrics["output_tokens"] += usage.get("completion_tokens") or 0
+            metrics["cost_usd"] += usage.get("cost") or 0.0
+            answer = ((data.get("choices") or [{}])[0].get("message") or {}).get("content") or ""
+            answer = answer.strip()
+        except (httpx.HTTPError, ValueError, KeyError) as e:
+            print(f"closing call failed: {e}", file=sys.stderr)
     if not answer:
         print("agent produced no answer", file=sys.stderr)
+        print("trace: " + json.dumps(trace)[:4000], file=sys.stderr)
         return 1
     if not citations and es.read_urls:
         citations = [{"url": url} for url in es.read_urls[:6]]
