@@ -425,3 +425,11 @@ def test_extract_json_salvages_truncated_array() -> None:
     value = extract_json(truncated)
     assert [item["id"] for item in value] == ["c1", "c2"]
     assert value[0]["text"] == 'A "quoted" claim, with a } brace'
+
+
+def test_extract_json_skips_a_malformed_object_inside_an_array() -> None:
+    from owrb.judge import extract_json
+
+    text = '[{"id": "a", "score": 1.0}, {"id": "b", "explanation": "bad \\x escape"}, {"id": "c", "score": 0.5}'
+    value = extract_json(text)
+    assert [item["id"] for item in value] == ["a", "c"]

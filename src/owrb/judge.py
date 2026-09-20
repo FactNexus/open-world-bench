@@ -60,7 +60,9 @@ def extract_json(text: str) -> Any:
     salvaged = _salvage_truncated_array(text)
     if salvaged is not None:
         return salvaged
-    raise JudgeError(f"judge response was not valid JSON: {text[:200]!r}")
+    raise JudgeError(
+        f"judge response was not valid JSON ({len(text)} chars): head {text[:200]!r} tail {text[-160:]!r}"
+    )
 
 
 def _salvage_truncated_array(text: str) -> list[Any] | None:
@@ -99,8 +101,39 @@ def _salvage_truncated_array(text: str) -> list[Any] | None:
     try:
         value = json.loads(text[start : last_complete + 1] + "]")
     except json.JSONDecodeError:
-        return None
+        value = _parse_objects_individually(text, start, last_complete)
     return value if isinstance(value, list) and value else None
+
+
+def _parse_objects_individually(text: str, start: int, end: int) -> list[Any] | None:
+    """Parse each top-level object of an array on its own, skipping malformed ones."""
+    items: list[Any] = []
+    depth, in_string, escape, obj_start = 0, False, False, -1
+    for index in range(start, end + 1):
+        char = text[index]
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            if depth == 0:
+                obj_start = index
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0 and obj_start != -1:
+                try:
+                    items.append(json.loads(text[obj_start : index + 1]))
+                except json.JSONDecodeError:
+                    pass
+                obj_start = -1
+    return items or None
 
 
 class AnthropicJudge:
