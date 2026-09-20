@@ -208,3 +208,24 @@ def test_gateway_upstream_error_is_classified(tmp_path: Path, monkeypatch) -> No
     )
     record, _ = asyncio.run(store.get("http://127.0.0.1:8001/missing.md"))
     assert record.status == "missing" and record.http_status == 404
+
+
+def test_gateway_upstream_5xx_is_retried_then_succeeds(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("OWRB_TEST_GATEWAY_KEY", "k-test")
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] < 3:
+            return httpx.Response(200, json={"status": 502, "content_type": "text/plain", "content": "", "provenance": {}})
+        return httpx.Response(200, json={"status": 200, "content_type": "text/markdown", "content": "# Recovered page\n\nbody", "provenance": {}})
+
+    import owrb.evidence as ev
+    monkeypatch.setattr(ev.asyncio, "sleep", _no_sleep)
+    store = EvidenceStore(tmp_path / "evidence", transport=httpx.MockTransport(handler), resolver=resolve_public, min_host_interval=0, gateways=[GATEWAY])
+    record, text = asyncio.run(store.get("http://127.0.0.1:8001/1001.md"))
+    assert record.status == "reachable" and record.title == "Recovered page" and calls["n"] == 3
+
+
+async def _no_sleep(_seconds: float) -> None:
+    return None

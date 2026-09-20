@@ -29,6 +29,7 @@ from owrb.url_safety import Resolver, check_url, default_resolver
 
 USER_AGENT = "owrb-evaluator/0.1 (benchmark evidence retrieval)"
 MAX_REDIRECTS = 5
+GATEWAY_ATTEMPTS = 4
 MAX_CONTENT_BYTES = 2_000_000
 _TEXTUAL_TYPES = ("text/", "application/json", "application/xhtml+xml", "application/xml")
 
@@ -142,31 +143,51 @@ class EvidenceStore:
         if key_env and not api_key:
             return _record(url, url, "blocked", warning=f"gateway key {key_env} is not set"), ""
         note = f"via gateway {endpoint} (manifold {gateway.get('manifold_id')})"
-        await self._politeness_delay(urlsplit(endpoint).hostname or "")
-        async with self._httpx.AsyncClient(
-            transport=self.transport,
-            timeout=self.timeout_seconds,
-            headers={"user-agent": USER_AGENT, **({"authorization": f"Bearer {api_key}"} if api_key else {})},
-        ) as client:
+        # A gateway sits in front of a rendering proxy whose pool recycles; a 5xx from
+        # either is usually transient. Retry with backoff before recording a miss, so a
+        # page that exists is not cached as missing for the rest of the run.
+        payload: dict[str, Any] | None = None
+        last: tuple[EvidenceRecord, str] | None = None
+        for attempt in range(GATEWAY_ATTEMPTS):
+            if attempt:
+                await asyncio.sleep(2 ** attempt)
+            await self._politeness_delay(urlsplit(endpoint).hostname or "")
+            async with self._httpx.AsyncClient(
+                transport=self.transport,
+                timeout=self.timeout_seconds,
+                headers={"user-agent": USER_AGENT, **({"authorization": f"Bearer {api_key}"} if api_key else {})},
+            ) as client:
+                try:
+                    response = await client.post(
+                        endpoint,
+                        json={
+                            "url": url,
+                            "manifold_id": int(gateway.get("manifold_id", 0)),
+                            "accept": str(gateway.get("accept", "markdown")),
+                        },
+                    )
+                except self._httpx.HTTPError as error:
+                    last = (_record(url, url, "missing", warning=f"gateway fetch error: {error}; {note}"), "")
+                    continue
+            if response.status_code in (401, 403):
+                return _record(url, url, "blocked", response.status_code, warning=note), ""
+            if response.status_code >= 500 or response.status_code == 429:
+                last = (_record(url, url, "missing", response.status_code, warning=f"gateway {response.status_code}; {note}"), "")
+                continue
+            if response.status_code != 200:
+                return _record(url, url, "missing", response.status_code, warning=note), ""
             try:
-                response = await client.post(
-                    endpoint,
-                    json={
-                        "url": url,
-                        "manifold_id": int(gateway.get("manifold_id", 0)),
-                        "accept": str(gateway.get("accept", "markdown")),
-                    },
-                )
-            except self._httpx.HTTPError as error:
-                return _record(url, url, "missing", warning=f"gateway fetch error: {error}; {note}"), ""
-        if response.status_code in (401, 403):
-            return _record(url, url, "blocked", response.status_code, warning=note), ""
-        if response.status_code != 200:
-            return _record(url, url, "missing", response.status_code, warning=note), ""
-        try:
-            payload = response.json()
-        except ValueError:
-            return _record(url, url, "unextractable", 200, warning=f"gateway returned non-JSON; {note}"), ""
+                candidate = response.json()
+            except ValueError:
+                return _record(url, url, "unextractable", 200, warning=f"gateway returned non-JSON; {note}"), ""
+            upstream = int(candidate.get("status") or 0)
+            if upstream >= 500 or upstream == 429 or not upstream:
+                last = (_record(url, url, "missing", upstream or None, warning=f"upstream {upstream}; {note}"), "")
+                continue
+            payload = candidate
+            break
+        if payload is None:
+            return last if last is not None else (_record(url, url, "missing", warning=note), "")
         upstream_status = int(payload.get("status") or 0)
         content = payload.get("content")
         if not isinstance(content, str):
