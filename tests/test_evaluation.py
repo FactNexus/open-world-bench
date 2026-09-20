@@ -413,3 +413,15 @@ def test_as_list_unwraps_wrapped_judge_arrays() -> None:
     assert _as_list({"a": [1], "b": [2]}) is None
     assert _as_list({"text": "no arrays here"}) is None
     assert _as_list("string") is None
+
+
+def test_extract_json_salvages_truncated_array() -> None:
+    from owrb.judge import extract_json
+
+    truncated = (
+        '[\n  {"id": "c1", "text": "A \\"quoted\\" claim, with a } brace", "citation_ids": []},\n'
+        '  {"id": "c2", "text": "second", "citation_ids": ["c1"]},\n  {"id": "c3", "text": "cut of'
+    )
+    value = extract_json(truncated)
+    assert [item["id"] for item in value] == ["c1", "c2"]
+    assert value[0]["text"] == 'A "quoted" claim, with a } brace'

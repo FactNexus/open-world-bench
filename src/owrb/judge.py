@@ -57,7 +57,50 @@ def extract_json(text: str) -> Any:
             return json.loads(candidate)
         except json.JSONDecodeError:
             continue
+    salvaged = _salvage_truncated_array(text)
+    if salvaged is not None:
+        return salvaged
     raise JudgeError(f"judge response was not valid JSON: {text[:200]!r}")
+
+
+def _salvage_truncated_array(text: str) -> list[Any] | None:
+    """Recover the complete objects of a JSON array cut off by the output token cap.
+
+    A judge asked for an array of objects that runs past max_tokens ends
+    mid-object. Everything before the last complete top-level object is
+    still well-formed; return those objects (at least one) so the trial is
+    judged on them rather than falling back to deterministic checks."""
+    start = text.find("[")
+    if start == -1:
+        return None
+    depth, in_string, escape, last_complete = 0, False, False, -1
+    for index in range(start, len(text)):
+        char = text[index]
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                last_complete = index
+        elif char == "]" and depth == 0:
+            break
+    if last_complete == -1:
+        return None
+    try:
+        value = json.loads(text[start : last_complete + 1] + "]")
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, list) and value else None
 
 
 class AnthropicJudge:
