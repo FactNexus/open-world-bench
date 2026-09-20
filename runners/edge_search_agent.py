@@ -293,9 +293,25 @@ def main() -> int:
     answer: str | None = None
     citations: list[dict] = []
 
+    rollbacks = 0
     for step in range(args.max_steps):
         force_submit = step == args.max_steps - 1
-        response = chat(or_client, args.model, messages, force_submit)
+        try:
+            response = chat(or_client, args.model, messages, force_submit)
+        except RuntimeError as e:
+            # Gemini (via OpenRouter) can leave the conversation carrying a corrupted
+            # "thought signature" after an aborted response; every retry that re-sends
+            # that turn fails with the same 400. Roll back to before the last assistant
+            # turn and let the model redo that step (at most twice per episode).
+            if "thought signature" in str(e).lower() and rollbacks < 2:
+                while messages and messages[-1].get("role") != "assistant":
+                    messages.pop()
+                if messages and messages[-1].get("role") == "assistant":
+                    messages.pop()
+                rollbacks += 1
+                trace.append({"step": step, "action": "rollback_after_corrupted_signature"})
+                continue
+            raise
         usage = response.get("usage") or {}
         metrics["input_tokens"] += usage.get("prompt_tokens") or 0
         metrics["output_tokens"] += usage.get("completion_tokens") or 0
