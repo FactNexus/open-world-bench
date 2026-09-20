@@ -300,10 +300,14 @@ def main() -> int:
             response = chat(or_client, args.model, messages, force_submit)
         except RuntimeError as e:
             # Gemini (via OpenRouter) can leave the conversation carrying a corrupted
-            # "thought signature" after an aborted response; every retry that re-sends
-            # that turn fails with the same 400. Roll back to before the last assistant
-            # turn and let the model redo that step (at most twice per episode).
-            if "thought signature" in str(e).lower() and rollbacks < 2:
+            # "thought signature" after an aborted response, and every retry that
+            # re-sends it fails with the same 400. Recovery ladder: roll back the last
+            # assistant turn and redo the step; then strip every reasoning field from
+            # the history (the signatures live there) and retry; then, if the model has
+            # read something, close with a no-tools answer over the stripped history.
+            if "thought signature" not in str(e).lower():
+                raise
+            if rollbacks == 0:
                 while messages and messages[-1].get("role") != "assistant":
                     messages.pop()
                 if messages and messages[-1].get("role") == "assistant":
@@ -311,6 +315,26 @@ def main() -> int:
                 rollbacks += 1
                 trace.append({"step": step, "action": "rollback_after_corrupted_signature"})
                 continue
+            if rollbacks == 1:
+                for m in messages:
+                    if m.get("role") == "assistant":
+                        for k in ("reasoning", "reasoning_details", "reasoning_content", "thought_signature", "extra_content"):
+                            m.pop(k, None)
+                rollbacks += 1
+                trace.append({"step": step, "action": "stripped_reasoning_after_corrupted_signature"})
+                continue
+            if es.ok_calls and answer is None:
+                trace.append({"step": step, "action": "closing_answer_after_corrupted_signature"})
+                plain = [{k: v for k, v in m.items() if k in ("role", "content", "tool_calls", "tool_call_id", "name")} for m in messages]
+                closing = plain + [{"role": "user", "content": "You have no more tool calls. Write your final answer now in markdown, using only what you have already retrieved, and list the URLs you relied on."}]
+                r = or_client.post(OPENROUTER_URL, json={"model": args.model, "messages": closing, "usage": {"include": True}, "temperature": 0})
+                r.raise_for_status(); data = r.json(); usage = data.get("usage") or {}
+                metrics["input_tokens"] += usage.get("prompt_tokens") or 0
+                metrics["output_tokens"] += usage.get("completion_tokens") or 0
+                metrics["cost_usd"] += usage.get("cost") or 0.0
+                answer = (((data.get("choices") or [{}])[0].get("message") or {}).get("content") or "").strip()
+                if answer:
+                    break
             raise
         usage = response.get("usage") or {}
         metrics["input_tokens"] += usage.get("prompt_tokens") or 0
