@@ -195,12 +195,34 @@ def build_rubric_prompt(
     )
 
 
+_LIST_WRAPPER_KEYS = ("claims", "verdicts", "results", "items", "scores", "criteria", "findings")
+
+
+def _as_list(raw: Any) -> list[Any] | None:
+    """Return the JSON array a judge was asked for, unwrapping a single-key object.
+
+    Judges asked for "a JSON array" sometimes answer with an object wrapping it —
+    Claude Opus 4.8 via OpenRouter returns ``{"claims": [...]}`` for the claim
+    decomposition, which left 248 trials of the first the partner corpus run unjudged.
+    """
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, dict):
+        for key in _LIST_WRAPPER_KEYS:
+            if isinstance(raw.get(key), list):
+                return raw[key]
+        lists = [value for value in raw.values() if isinstance(value, list)]
+        if len(lists) == 1:
+            return lists[0]
+    return None
+
+
 async def _decompose_claims(
     judge: JudgeClient, scenario: ScenarioInstance, result: RunResult
 ) -> list[dict[str, Any]]:
     response = await judge.complete(_SYSTEM_PROMPT, build_decompose_prompt(scenario, result))
-    raw = extract_json(response)
-    if not isinstance(raw, list):
+    raw = _as_list(extract_json(response))
+    if raw is None:
         raise JudgeError("claim decomposition did not return a JSON array")
     claims: list[dict[str, Any]] = []
     valid_citation_ids = {citation.id for citation in result.citations}
@@ -236,8 +258,8 @@ async def _judge_claim_support(
         response = await judge.complete(
             _SYSTEM_PROMPT, build_support_prompt(cited_claims, citation_urls, evidence)
         )
-        raw = extract_json(response)
-        if isinstance(raw, list):
+        raw = _as_list(extract_json(response))
+        if raw is not None:
             for item in raw:
                 if isinstance(item, dict) and item.get("id"):
                     verdicts[str(item["id"])] = item
@@ -284,9 +306,9 @@ async def _judge_rubric(
     response = await judge.complete(
         _SYSTEM_PROMPT, build_rubric_prompt(scenario, result, claims)
     )
-    raw = extract_json(response)
+    raw = _as_list(extract_json(response))
     scored: dict[str, dict[str, Any]] = {}
-    if isinstance(raw, list):
+    if raw is not None:
         for item in raw:
             if isinstance(item, dict) and item.get("id"):
                 scored[str(item["id"])] = item

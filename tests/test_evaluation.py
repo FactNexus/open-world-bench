@@ -401,3 +401,15 @@ def test_evaluate_run_set_end_to_end(tmp_path: Path) -> None:
     }
     assert statuses["https://parks.example/clifftop"] == "reachable"
     assert statuses["https://lookout.example/echo-point"] == "missing"
+
+
+def test_as_list_unwraps_wrapped_judge_arrays() -> None:
+    from owrb.evaluation import _as_list
+
+    assert _as_list([1, 2]) == [1, 2]
+    assert _as_list({"claims": [{"id": "c1"}]}) == [{"id": "c1"}]
+    assert _as_list({"note": "x", "verdicts": [{"id": "v1"}]}) == [{"id": "v1"}]
+    assert _as_list({"anything": [{"id": "a"}]}) == [{"id": "a"}]
+    assert _as_list({"a": [1], "b": [2]}) is None
+    assert _as_list({"text": "no arrays here"}) is None
+    assert _as_list("string") is None
