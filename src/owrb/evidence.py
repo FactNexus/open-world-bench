@@ -23,6 +23,7 @@ from urllib.parse import urljoin, urlsplit
 
 import orjson
 
+from owrb.evidence_text import clean_evidence_text
 from owrb.html_text import extract_text
 from owrb.models import EvidenceRecord
 from owrb.url_safety import Resolver, check_url, default_resolver
@@ -84,7 +85,8 @@ class EvidenceStore:
         record = EvidenceRecord.model_validate_json(record_path.read_text("utf-8"))
         text_path = self._text_path(key)
         text = text_path.read_text("utf-8") if text_path.is_file() else ""
-        return record, text
+        # Cached objects written before the front-matter fix are cleaned on the way out.
+        return record, clean_evidence_text(text)
 
     def _store(self, url: str, record: EvidenceRecord, text: str) -> None:
         key = evidence_key(url)
@@ -111,6 +113,7 @@ class EvidenceStore:
             if cached is not None:
                 return cached
         record, text = await self._fetch(url)
+        text = clean_evidence_text(text)
         self._store(url, record, text)
         return record, text
 

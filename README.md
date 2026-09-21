@@ -127,6 +127,21 @@ support against the retrieved evidence, and scores template criteria blind to th
 candidate's identity. Without a judge it still produces deterministic scores and
 marks results as requiring review.
 
+Evidence shown to the judge is cleaned (YAML front matter from markdown gateways is
+stripped, navigation chrome dropped from HTML) and selected for the claim being
+judged: up to 4,000 characters per citation, the page head plus the passages sharing
+the most terms with the claim, rather than the first 1,200 characters of the page.
+The evidence-handling version is recorded in each evaluation's `judge_configuration`,
+so `--resume` re-judges trials evaluated under an older scheme.
+
+A **decision model** can take over the citation verdicts and the rubric scoring via
+`evaluation.decision_judge` (adapter `openrouter_decisions` or `typesafe`, model such
+as `typesafe/jev-1.13`): one typed call per cited claim (verdict as a choice with
+probabilities, source suitability as a yes/no probability) and one per trial for the
+criteria (a four-level score and a pass probability each). Claim decomposition still
+uses the text judge in `evaluation.judge`. Set `escalate_below_confidence` to re-ask
+the text judge for verdicts the decision model is unsure about.
+
 `owrb report` writes a self-contained dashboard to `runs/<id>/report/index.html`
 (no scripts, no external assets — it works offline), a `report.html` audit view in
 every trial directory, and `comparison.json` / `summary.csv` / `pairwise.csv` /

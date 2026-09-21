@@ -231,6 +231,7 @@ class ClaimResult(StrictModel):
     citation_ids: list[str] = Field(default_factory=list)
     verdict: Literal["supported", "contradicted", "not_addressed", "no_citation", "unverifiable"]
     explanation: str = ""
+    confidence: float | None = Field(default=None, ge=0, le=1)
 
 
 class CriterionResult(StrictModel):

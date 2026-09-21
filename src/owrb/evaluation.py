@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -23,7 +24,9 @@ from typing import Any
 import orjson
 from pydantic import BaseModel, ConfigDict, Field
 
+from owrb.decisions import DecisionClient, DecisionJudgeConfig, create_decision_judge
 from owrb.evidence import EvidenceStore, build_evidence_bundle
+from owrb.evidence_text import select_passages
 from owrb.judge import JudgeClient, JudgeConfig, JudgeError, create_judge, extract_json
 from owrb.models import (
     ClaimResult,
@@ -48,8 +51,25 @@ DEFAULT_QUALITY_WEIGHTS: dict[str, float] = {
 }
 
 _MAX_ANSWER_CHARS = 8000
-_MAX_EVIDENCE_CHARS = 1200
+# Per citation, after claim-relevant passage selection (was 1,200 chars of page head,
+# which on gateway-fetched pages was mostly YAML front matter).
+_MAX_EVIDENCE_CHARS = 4000
 _MAX_CLAIMS = 30
+# Recorded in every evaluation's judge_configuration so a change in how evidence is
+# shown to the judge invalidates earlier evaluations for --resume.
+EVIDENCE_HANDLING = "passages-v2"
+
+_VERDICT_CRITERIA = {
+    "supported": "the evidence clearly backs the claim",
+    "contradicted": "the evidence clearly conflicts with the claim",
+    "not_addressed": "the evidence is reachable but does not cover the claim",
+}
+_SCORE_LEVELS = [
+    "The answer does not meet the criterion at all",
+    "The answer partly meets the criterion, with clear gaps",
+    "The answer mostly meets the criterion, with minor gaps",
+    "The answer fully meets the criterion",
+]
 
 _SYSTEM_PROMPT = (
     "You are a blind evaluator for an open-world research benchmark. You do not "
@@ -83,7 +103,26 @@ class EvaluationConfig(BaseModel):
     hard_constraint_score_cap: float = Field(default=49, ge=0, le=100)
     evidence_cache: bool = True
     judge: JudgeConfig = Field(default_factory=JudgeConfig)
+    # Optional decision model that takes over claim verdicts and rubric scoring.
+    decision_judge: DecisionJudgeConfig = Field(default_factory=DecisionJudgeConfig)
     evidence_gateways: list[EvidenceGatewayConfig] = Field(default_factory=list)
+
+
+def judge_configuration_for(
+    judge: JudgeClient | None, decision_judge: DecisionClient | None
+) -> dict[str, Any]:
+    """The identity recorded with every evaluation; a change here forces re-judging."""
+    configuration: dict[str, Any] = (
+        dict(judge.identity) if judge is not None else {"adapter": "none"}
+    )
+    if decision_judge is not None:
+        configuration["decisions"] = dict(decision_judge.identity)
+    configuration["evidence_handling"] = EVIDENCE_HANDLING
+    return configuration
+
+
+def _claim_type(value: Any) -> str:
+    return value if value in ("factual", "operational", "recommendation", "other") else "other"
 
 
 def _truncate(text: str, limit: int) -> str:
@@ -122,6 +161,10 @@ def build_support_prompt(
     evidence: dict[str, tuple[EvidenceRecord, str]],
 ) -> str:
     evidence_sections: list[str] = []
+    claims_by_citation: dict[str, list[str]] = {}
+    for claim in claims:
+        for citation_id in claim.get("citation_ids", []):
+            claims_by_citation.setdefault(str(citation_id), []).append(str(claim.get("text", "")))
     for citation_id, url in sorted(citation_urls.items()):
         entry = evidence.get(url)
         if entry is None:
@@ -132,7 +175,10 @@ def build_support_prompt(
             evidence_sections.append(
                 f"[{citation_id}] {url}\nstatus: reachable"
                 + (f"\ntitle: {record.title}" if record.title else "")
-                + f"\nextract:\n{_truncate(text, _MAX_EVIDENCE_CHARS)}"
+                + "\nextract:\n"
+                + select_passages(
+                    text, claims_by_citation.get(citation_id, []), _MAX_EVIDENCE_CHARS
+                )
             )
         else:
             evidence_sections.append(
@@ -210,7 +256,7 @@ def _as_list(raw: Any) -> list[Any] | None:
     if isinstance(raw, dict):
         for key in _LIST_WRAPPER_KEYS:
             if isinstance(raw.get(key), list):
-                return raw[key]
+                return list(raw[key])
         lists = [value for value in raw.values() if isinstance(value, list)]
         if len(lists) == 1:
             return lists[0]
@@ -293,6 +339,207 @@ async def _judge_claim_support(
             )
         )
     return claim_results
+
+
+def _claim_evidence_state(
+    claim: dict[str, Any],
+    citation_urls: dict[str, str],
+    evidence: dict[str, tuple[EvidenceRecord, str]],
+) -> tuple[str, bool]:
+    """The state a decision model sees for one claim: the claim and its cited passages."""
+    sections: list[str] = []
+    any_reachable = False
+    for citation_id in claim["citation_ids"]:
+        url = citation_urls.get(citation_id)
+        entry = evidence.get(url) if url else None
+        if entry is None:
+            sections.append(f"[{citation_id}] {url}\nstatus: not retrieved")
+            continue
+        record, text = entry
+        if record.status == "reachable" and text:
+            any_reachable = True
+            sections.append(
+                f"[{citation_id}] {url}\nstatus: reachable"
+                + (f"\ntitle: {record.title}" if record.title else "")
+                + "\nextract:\n"
+                + select_passages(text, [claim["text"]], _MAX_EVIDENCE_CHARS)
+            )
+        else:
+            sections.append(
+                f"[{citation_id}] {url}\nstatus: {record.status}"
+                + (f" ({record.warning})" if record.warning else "")
+            )
+    state = (
+        "CLAIM made by the answer under evaluation:\n"
+        f"{claim['text']}\n\n"
+        "EVIDENCE cited for the claim:\n\n" + "\n\n".join(sections)
+    )
+    return state, any_reachable
+
+
+async def _judge_claim_support_decisions(
+    decision: DecisionClient,
+    claims: list[dict[str, Any]],
+    result: RunResult,
+    evidence: dict[str, tuple[EvidenceRecord, str]],
+    settings: DecisionJudgeConfig,
+    escalation_judge: JudgeClient | None,
+) -> list[ClaimResult]:
+    """One decision call per cited claim: verdict (choice) and source suitability (noul)."""
+    citation_urls = {citation.id: citation.url for citation in result.citations}
+    semaphore = asyncio.Semaphore(settings.concurrency)
+    questions = {
+        "verdict": {
+            "type": "choice",
+            "instructions": "Judge whether the cited evidence supports the claim.",
+            "criteria": _VERDICT_CRITERIA,
+        },
+        "source_suitable": {
+            "type": "noul",
+            "instructions": (
+                "Is the cited source a suitable authority for this kind of claim? An "
+                "operator or authority page suits operational claims; user-generated "
+                "content alone does not suit safety, legal, access or price claims."
+            ),
+        },
+    }
+
+    async def judge_one(claim: dict[str, Any]) -> ClaimResult:
+        base = {
+            "id": claim["id"],
+            "text": claim["text"],
+            "claim_type": _claim_type(claim["type"]),
+            "time_sensitive": claim["time_sensitive"],
+            "citation_ids": claim["citation_ids"],
+        }
+        if not claim["citation_ids"]:
+            return ClaimResult(
+                verdict="no_citation", explanation="no citation was placed near this claim", **base
+            )
+        state, any_reachable = _claim_evidence_state(claim, citation_urls, evidence)
+        if not any_reachable:
+            return ClaimResult(
+                verdict="unverifiable",
+                explanation="cited evidence could not be retrieved or extracted",
+                **base,
+            )
+        async with semaphore:
+            answers = await decision.decide(state, questions)
+        verdict_answer = answers.get("verdict") or {}
+        choice = verdict_answer.get("choice")
+        verdict = choice if choice in _VERDICT_CRITERIA else "unverifiable"
+        probabilities = verdict_answer.get("probabilities") or {}
+        confidence = verdict_answer.get("confidence")
+        suitable = (answers.get("source_suitable") or {}).get("noul")
+        explanation = (
+            f"decision model: {verdict} (p={float(probabilities.get(verdict, 0)):.2f}"
+            + (f", confidence={float(confidence):.2f})" if confidence is not None else ")")
+            + (f"; source suitable p={float(suitable):.2f}" if suitable is not None else "")
+        )
+        if (
+            escalation_judge is not None
+            and confidence is not None
+            and float(confidence) < settings.escalate_below_confidence
+        ):
+            response = await escalation_judge.complete(
+                _SYSTEM_PROMPT, build_support_prompt([claim], citation_urls, evidence)
+            )
+            raw = _as_list(extract_json(response)) or []
+            for item in raw:
+                if isinstance(item, dict) and item.get("verdict") in (
+                    "supported", "contradicted", "not_addressed", "unverifiable"
+                ):
+                    verdict = str(item["verdict"])
+                    explanation = (
+                        f"escalated to text judge (decision confidence {float(confidence):.2f}): "
+                        f"{item.get('explanation', '')}"
+                    )
+                    break
+        return ClaimResult(
+            verdict=verdict,  # type: ignore[arg-type]
+            explanation=explanation,
+            confidence=float(confidence) if confidence is not None else None,
+            **base,
+        )
+
+    return list(await asyncio.gather(*(judge_one(claim) for claim in claims)))
+
+
+def _question_key(criterion_id: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_]", "_", criterion_id)
+
+
+async def _judge_rubric_decisions(
+    decision: DecisionClient,
+    scenario: ScenarioInstance,
+    result: RunResult,
+    claims: list[ClaimResult],
+) -> list[CriterionResult]:
+    """One decision call per trial: a score and a pass probability for every criterion."""
+    if not scenario.criteria:
+        return []
+    state = {
+        "task_prompt": scenario.prompt,
+        "answer": _truncate(result.answer, _MAX_ANSWER_CHARS),
+        "citations": [{"id": citation.id, "url": citation.url} for citation in result.citations],
+        "claim_verdicts": [
+            {"claim": _truncate(claim.text, 200), "verdict": claim.verdict} for claim in claims
+        ],
+    }
+    questions: dict[str, Any] = {}
+    keys: dict[str, str] = {}
+    for criterion in scenario.criteria:
+        key = _question_key(criterion.id)
+        keys[criterion.id] = key
+        wording = f"{criterion.title}: {criterion.description.strip()}"
+        questions[f"{key}__score"] = {
+            "type": "score",
+            "instructions": f"How well does the answer satisfy this criterion? {wording}",
+            "criteria": _SCORE_LEVELS,
+        }
+        questions[f"{key}__passed"] = {
+            "type": "noul",
+            "instructions": f"Does the answer satisfy this criterion? {wording}",
+        }
+    answers = await decision.decide(state, questions)
+    top = len(_SCORE_LEVELS) - 1
+    findings: list[CriterionResult] = []
+    for criterion in scenario.criteria:
+        score_answer = answers.get(f"{keys[criterion.id]}__score")
+        pass_answer = answers.get(f"{keys[criterion.id]}__passed")
+        if not score_answer or not pass_answer:
+            findings.append(
+                CriterionResult(
+                    criterion_id=criterion.id,
+                    dimension=criterion.dimension,
+                    score=0.5,
+                    passed=None,
+                    explanation="decision model did not return a score for this criterion",
+                    confidence=0.0,
+                )
+            )
+            continue
+        level = float(score_answer.get("score", 0.0))
+        score = min(1.0, max(0.0, level / top))
+        pass_probability = float(pass_answer.get("noul", 0.0))
+        passed = pass_probability >= 0.5
+        confidence = score_answer.get("confidence")
+        nearest = _SCORE_LEVELS[min(top, max(0, round(level)))]
+        findings.append(
+            CriterionResult(
+                criterion_id=criterion.id,
+                dimension=criterion.dimension,
+                score=round(score, 4),
+                passed=passed,
+                explanation=(
+                    f"decision model: {nearest[0].lower() + nearest[1:]} "
+                    f"(level {level:.2f} of {top}; P(pass)={pass_probability:.2f})"
+                ),
+                confidence=float(confidence) if confidence is not None else None,
+                hard_failure=criterion.hard and not passed,
+            )
+        )
+    return findings
 
 
 async def _judge_rubric(
@@ -479,10 +726,11 @@ async def evaluate_run(
     evidence: dict[str, tuple[EvidenceRecord, str]],
     judge: JudgeClient | None,
     config: EvaluationConfig,
+    decision_judge: DecisionClient | None = None,
 ) -> EvaluationResult:
     run_id = f"{scenario.id}/{result.system_id}/{result.trial_id}"
     warnings: list[str] = []
-    judge_configuration = dict(judge.identity) if judge is not None else {"adapter": "none"}
+    judge_configuration = judge_configuration_for(judge, decision_judge)
 
     if result.status not in ("completed", "manual"):
         return EvaluationResult(
@@ -503,9 +751,29 @@ async def evaluate_run(
     if judge is not None:
         try:
             raw_claims = await _decompose_claims(judge, scenario, result)
-            claims = await _judge_claim_support(judge, raw_claims, result, evidence)
+            if decision_judge is not None:
+                settings = config.decision_judge
+                escalation = judge if settings.escalate_below_confidence > 0 else None
+                claims = await _judge_claim_support_decisions(
+                    decision_judge, raw_claims, result, evidence, settings, escalation
+                )
+            else:
+                claims = await _judge_claim_support(judge, raw_claims, result, evidence)
             criteria_results.extend(claims_to_criteria(claims, evidence))
-            criteria_results.extend(await _judge_rubric(judge, scenario, result, claims))
+            if decision_judge is not None:
+                criteria_results.extend(
+                    await _judge_rubric_decisions(decision_judge, scenario, result, claims)
+                )
+            else:
+                criteria_results.extend(await _judge_rubric(judge, scenario, result, claims))
+        except JudgeError as error:
+            warnings.append(f"judge evaluation incomplete: {error}")
+    elif decision_judge is not None:
+        warnings.append("no text judge for claim decomposition; claims were not scored")
+        try:
+            criteria_results.extend(
+                await _judge_rubric_decisions(decision_judge, scenario, result, claims)
+            )
         except JudgeError as error:
             warnings.append(f"judge evaluation incomplete: {error}")
     else:
@@ -552,9 +820,9 @@ def _load_run_results(run_set_directory: Path, scenario_id: str) -> list[tuple[P
     return results
 
 
-def _already_evaluated(trial_directory: Path, judge: JudgeClient | None) -> bool:
-    """True when the trial already carries an evaluation by this same judge."""
-    if judge is None:
+def _already_evaluated(trial_directory: Path, expected: dict[str, Any] | None) -> bool:
+    """True when the trial already carries an evaluation with this judge configuration."""
+    if not expected or expected.get("adapter") == "none":
         return False
     evaluation_path = trial_directory / "evaluation.json"
     if not evaluation_path.is_file():
@@ -563,7 +831,7 @@ def _already_evaluated(trial_directory: Path, judge: JudgeClient | None) -> bool
         existing = json.loads(evaluation_path.read_text("utf-8"))
     except (OSError, json.JSONDecodeError):
         return False
-    return bool(existing.get("judge_configuration") == dict(judge.identity))
+    return bool(existing.get("judge_configuration") == expected)
 
 
 async def evaluate_run_set(
@@ -600,6 +868,8 @@ async def evaluate_run_set(
             config = EvaluationConfig.model_validate(raw_evaluation)
     if judge is None:
         judge = create_judge(config.judge)
+    decision_judge = create_decision_judge(config.decision_judge)
+    expected_configuration = judge_configuration_for(judge, decision_judge)
     if store is None:
         store = EvidenceStore(
             run_set_directory / "evidence",
@@ -609,7 +879,7 @@ async def evaluate_run_set(
     summary: dict[str, Any] = {
         "evaluated": 0,
         "scenarios": 0,
-        "judge": dict(judge.identity) if judge else {"adapter": "none"},
+        "judge": expected_configuration,
         "warnings": [],
     }
     if judge is None:
@@ -631,7 +901,7 @@ async def evaluate_run_set(
                 remaining = [
                     (directory, result)
                     for directory, result in trials
-                    if not _already_evaluated(directory, judge)
+                    if not _already_evaluated(directory, expected_configuration)
                 ]
                 summary["skipped"] += len(trials) - len(remaining)
                 trials = remaining
@@ -665,7 +935,7 @@ async def evaluate_run_set(
                 }
                 try:
                     evaluation = await evaluate_run(
-                        scenario, result, trial_evidence, judge, config
+                        scenario, result, trial_evidence, judge, config, decision_judge
                     )
                 except Exception as error:  # noqa: BLE001 — one trial must not sink the pass
                     summary["warnings"].append(
@@ -684,4 +954,6 @@ async def evaluate_run_set(
     async with asyncio.TaskGroup() as task_group:
         for scenario_path in sorted(scenario_directory.glob("*.json")):
             task_group.create_task(process_scenario(scenario_path))
+    if decision_judge is not None:
+        summary["decision_usage"] = dict(decision_judge.usage)
     return summary

@@ -433,3 +433,132 @@ def test_extract_json_skips_a_malformed_object_inside_an_array() -> None:
     text = '[{"id": "a", "score": 1.0}, {"id": "b", "explanation": "bad \\x escape"}, {"id": "c", "score": 0.5}'
     value = extract_json(text)
     assert [item["id"] for item in value] == ["a", "c"]
+
+
+# --- decision-model judge -----------------------------------------------------------
+
+
+class FakeDecisionClient:
+    """Answers verdict/rubric questions from the state; records what it was asked."""
+
+    identity = {"adapter": "fake_decisions", "model": "scripted"}
+
+    def __init__(self) -> None:
+        self.usage = {"calls": 0, "input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0}
+        self.states: list[object] = []
+
+    async def decide(self, state: object, questions: dict[str, object]) -> dict[str, object]:
+        self.states.append(state)
+        self.usage["calls"] += 1
+        if "verdict" in questions:
+            text = str(state)
+            choice = "supported" if "wheelchair accessible" in text else "not_addressed"
+            probabilities = {"supported": 0.0, "contradicted": 0.0, "not_addressed": 0.0}
+            probabilities[choice] = 0.9
+            return {
+                "verdict": {
+                    "type": "choice",
+                    "choice": choice,
+                    "probabilities": probabilities,
+                    "confidence": 0.88,
+                },
+                "source_suitable": {"type": "noul", "noul": 0.7},
+            }
+        answers: dict[str, object] = {}
+        for key in questions:
+            if key.endswith("__score"):
+                answers[key] = {
+                    "type": "score",
+                    "score": 1.0,
+                    "confidence": 0.6,
+                    "probabilities": {},
+                }
+            elif key.endswith("__passed"):
+                answers[key] = {"type": "noul", "noul": 0.2}
+        return answers
+
+
+def test_decision_judge_takes_over_verdicts_and_rubric() -> None:
+    from owrb.evaluation import EVIDENCE_HANDLING, EvaluationConfig, evaluate_run
+
+    scenario = scenario_with_criteria()
+    judge = FakeJudge()
+    decision = FakeDecisionClient()
+    evaluation = asyncio.run(
+        evaluate_run(
+            scenario, completed_result(), reachable_evidence(), judge, EvaluationConfig(), decision
+        )
+    )
+    verdicts = {claim.id: claim.verdict for claim in evaluation.claims}
+    assert verdicts["c1"] == "supported"
+    assert verdicts["c2"] == "not_addressed"
+    assert verdicts["c3"] == "no_citation"
+    assert all(claim.confidence == 0.88 for claim in evaluation.claims if claim.citation_ids)
+    assert all(
+        claim.explanation.startswith("decision model:")
+        for claim in evaluation.claims
+        if claim.citation_ids
+    )
+    template_findings = [
+        finding
+        for finding in evaluation.criteria
+        if not finding.criterion_id.startswith("framework.")
+    ]
+    assert template_findings
+    assert all(f.explanation.startswith("decision model:") for f in template_findings)
+    assert all(f.score == round(1.0 / 3, 4) and f.passed is False for f in template_findings)
+    assert evaluation.judge_configuration == {
+        "adapter": "fake",
+        "model": "scripted",
+        "decisions": {"adapter": "fake_decisions", "model": "scripted"},
+        "evidence_handling": EVIDENCE_HANDLING,
+    }
+    # decomposition still went through the text judge; verdicts and rubric did not
+    assert len(judge.prompts) == 1
+    assert decision.usage["calls"] == 3  # two cited claims + one rubric call
+
+
+def test_judge_configuration_change_invalidates_resume(tmp_path: Path) -> None:
+    from owrb.evaluation import _already_evaluated, judge_configuration_for
+
+    trial = tmp_path / "t01"
+    trial.mkdir()
+    (trial / "evaluation.json").write_text(
+        json.dumps({"judge_configuration": {"adapter": "fake", "model": "scripted"}}),
+        encoding="utf-8",
+    )
+    assert not _already_evaluated(trial, judge_configuration_for(FakeJudge(), None))
+    (trial / "evaluation.json").write_text(
+        json.dumps({"judge_configuration": judge_configuration_for(FakeJudge(), None)}),
+        encoding="utf-8",
+    )
+    assert _already_evaluated(trial, judge_configuration_for(FakeJudge(), None))
+    assert not _already_evaluated(trial, judge_configuration_for(FakeJudge(), FakeDecisionClient()))
+
+
+def test_support_prompt_shows_claim_relevant_passages_not_front_matter() -> None:
+    from owrb.evaluation import build_support_prompt
+
+    url = "https://parks.example/clifftop"
+    record, _ = reachable_evidence()[url]
+    filler = "\n\n".join(
+        f"Paragraph {n} about the visitor centre and the car park." for n in range(60)
+    )
+    page = (
+        "---\nversion: 1.0.0\nfetched_at: 2026-09-20\n---\n\n# Clifftop\n\n" + filler
+        + "\n\n## Fees\n\n| Item | Price | Reported |\n|---|---|---|\n"
+        + "| Adult | AUD 12.00 | 2025-07 |\n"
+    )
+    prompt = build_support_prompt(
+        [
+            {
+                "id": "c1",
+                "text": "Adult entry costs AUD 12.00, reported July 2025",
+                "citation_ids": ["c1"],
+            }
+        ],
+        {"c1": url},
+        {url: (record, page)},
+    )
+    assert "version: 1.0.0" not in prompt
+    assert "| Adult | AUD 12.00 | 2025-07 |" in prompt

@@ -92,12 +92,18 @@ Evaluation is mixed (SPEC.md §16):
    sources are classified (blocked, paywalled, missing, unextractable,
    invalid), not auto-failed.
 3. **Claim and citation judging** — an LLM judge decomposes the answer into
-   material claims, maps them to nearby citations, and judges support
-   against the retrieved evidence extracts. Citation precision, coverage,
-   and unsupported-claim rate are recorded per trial.
-4. **Rubric judging** — the same judge scores template criteria
-   (feasibility, adaptation, accessibility evidence, and so on) with
-   explanations and confidence.
+   material claims and maps them to nearby citations; support is then judged
+   against the retrieved evidence, either by the same LLM or by a decision
+   model (`evaluation.decision_judge`) that answers a typed verdict question
+   per claim with calibrated probabilities. The evidence a judge sees is
+   cleaned (front matter and navigation removed) and selected for the claim:
+   the page head plus the passages sharing the most terms with the claim,
+   up to 4,000 characters per citation. Citation precision, coverage, and
+   unsupported-claim rate are recorded per trial.
+4. **Rubric judging** — the same judge (or the decision model, with a
+   four-level score and a pass probability per criterion) scores template
+   criteria (feasibility, adaptation, accessibility evidence, and so on)
+   with explanations and confidence.
 
 The judge is blind to candidate identity: prompts contain the scenario,
 answer, citations, and evidence — never the system name. The baseline

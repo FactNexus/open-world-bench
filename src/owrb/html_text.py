@@ -10,7 +10,9 @@ from __future__ import annotations
 
 from html.parser import HTMLParser
 
-_SKIPPED_TAGS = frozenset({"script", "style", "noscript", "template", "svg", "iframe"})
+_SKIPPED_TAGS = frozenset(
+    {"script", "style", "noscript", "template", "svg", "iframe", "nav", "footer", "aside", "form"}
+)
 _BLOCK_TAGS = frozenset(
     {
         "p",
