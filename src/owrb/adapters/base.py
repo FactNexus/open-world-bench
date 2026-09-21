@@ -8,6 +8,7 @@ in outbound requests.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 from datetime import UTC, datetime
@@ -73,7 +74,12 @@ def utc_now() -> datetime:
 
 
 def compute_cost_usd(settings: dict[str, Any], metrics: RunMetrics) -> float | None:
-    """Compute cost from system-declared per-million-token rates (SPEC.md 9.4)."""
+    """Compute cost from system-declared rates (SPEC.md 9.4).
+
+    Uses ``cost.input_per_mtok`` / ``cost.output_per_mtok`` for token cost, plus
+    an optional ``cost.search_per_1k`` per-thousand-searches surcharge (web
+    search / grounding tool fees, which can dominate token cost).
+    """
     cost_config = settings.get("cost")
     if not isinstance(cost_config, dict):
         return None
@@ -87,4 +93,11 @@ def compute_cost_usd(settings: dict[str, Any], metrics: RunMetrics) -> float | N
     cost = (
         metrics.input_tokens * input_rate + metrics.output_tokens * output_rate
     ) / 1_000_000
+    # Optional per-search surcharge (web_search / grounding tool fees). These can
+    # dominate token cost for search-augmented systems, so include them when the
+    # system declares a rate and the adapter reported a search count.
+    search_rate = cost_config.get("search_per_1k")
+    if search_rate is not None and metrics.searches:
+        with contextlib.suppress(TypeError, ValueError):
+            cost += metrics.searches * float(search_rate) / 1000
     return round(cost, 6)

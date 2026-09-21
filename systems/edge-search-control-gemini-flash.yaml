@@ -1,0 +1,29 @@
+# System 1 — CONTROL: the current Bookeasy production shape. gemini-3-flash
+# driving edge-search WITHOUT the ontology (per-request disable_ontology flag;
+# same manifold, corpus, and embeddings as the onto system — the ontological
+# leg is the only variable). OpenRouter's gemini-3-flash-preview is the
+# closest available ID to production's gemini-3-flash.
+schema_version: 1
+id: edge-search-control-gemini-flash
+name: gemini-3-flash + edge-search (no ontology) — control
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: false
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --disable-ontology
+environment:
+  api_key: OPENROUTER_API_KEY

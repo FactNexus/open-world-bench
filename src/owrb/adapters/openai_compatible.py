@@ -25,8 +25,9 @@ System settings:
   hints, provider pinning);
 - ``extra_headers``: additional plain-text headers (attribution headers such
   as OpenRouter's ``X-Title`` — never secrets);
-- ``cost.input_per_mtok`` / ``cost.output_per_mtok``: fallback rates used
-  only when the gateway does not report a cost itself.
+- ``cost.input_per_mtok`` / ``cost.output_per_mtok`` (and optional
+  ``cost.search_per_1k`` for web-search/grounding tool fees): fallback rates
+  used only when the gateway does not report a cost itself.
 
 Citations are read from OpenAI-style ``url_citation`` annotations on the
 response message, which OpenRouter populates for web-enabled requests.

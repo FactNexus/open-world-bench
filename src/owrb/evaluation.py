@@ -14,6 +14,7 @@ Quality and efficiency stay separate: nothing here reads run metrics.
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import UTC, datetime
 from pathlib import Path
@@ -58,6 +59,21 @@ _SYSTEM_PROMPT = (
 )
 
 
+class EvidenceGatewayConfig(BaseModel):
+    """Fetch pages under ``match_prefix`` through an edge-search gateway endpoint
+    (``POST /v1/gateway/fetch``) instead of directly. For candidate-owned pages
+    the evaluator cannot reach itself, such as a loopback md-site behind a
+    private index. The evidence record carries the provenance (SPEC.md 15.5)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    match_prefix: str
+    endpoint: str
+    manifold_id: int
+    api_key_env: str = ""
+    accept: str = "markdown"
+
+
 class EvaluationConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -67,6 +83,7 @@ class EvaluationConfig(BaseModel):
     hard_constraint_score_cap: float = Field(default=49, ge=0, le=100)
     evidence_cache: bool = True
     judge: JudgeConfig = Field(default_factory=JudgeConfig)
+    evidence_gateways: list[EvidenceGatewayConfig] = Field(default_factory=list)
 
 
 def _truncate(text: str, limit: int) -> str:
@@ -178,12 +195,34 @@ def build_rubric_prompt(
     )
 
 
+_LIST_WRAPPER_KEYS = ("claims", "verdicts", "results", "items", "scores", "criteria", "findings")
+
+
+def _as_list(raw: Any) -> list[Any] | None:
+    """Return the JSON array a judge was asked for, unwrapping a single-key object.
+
+    Judges asked for "a JSON array" sometimes answer with an object wrapping it —
+    Claude Opus 4.8 via OpenRouter returns ``{"claims": [...]}`` for the claim
+    decomposition, which left 248 trials of the first the partner corpus run unjudged.
+    """
+    if isinstance(raw, list):
+        return raw
+    if isinstance(raw, dict):
+        for key in _LIST_WRAPPER_KEYS:
+            if isinstance(raw.get(key), list):
+                return raw[key]
+        lists = [value for value in raw.values() if isinstance(value, list)]
+        if len(lists) == 1:
+            return lists[0]
+    return None
+
+
 async def _decompose_claims(
     judge: JudgeClient, scenario: ScenarioInstance, result: RunResult
 ) -> list[dict[str, Any]]:
     response = await judge.complete(_SYSTEM_PROMPT, build_decompose_prompt(scenario, result))
-    raw = extract_json(response)
-    if not isinstance(raw, list):
+    raw = _as_list(extract_json(response))
+    if raw is None:
         raise JudgeError("claim decomposition did not return a JSON array")
     claims: list[dict[str, Any]] = []
     valid_citation_ids = {citation.id for citation in result.citations}
@@ -219,8 +258,8 @@ async def _judge_claim_support(
         response = await judge.complete(
             _SYSTEM_PROMPT, build_support_prompt(cited_claims, citation_urls, evidence)
         )
-        raw = extract_json(response)
-        if isinstance(raw, list):
+        raw = _as_list(extract_json(response))
+        if raw is not None:
             for item in raw:
                 if isinstance(item, dict) and item.get("id"):
                     verdicts[str(item["id"])] = item
@@ -267,9 +306,9 @@ async def _judge_rubric(
     response = await judge.complete(
         _SYSTEM_PROMPT, build_rubric_prompt(scenario, result, claims)
     )
-    raw = extract_json(response)
+    raw = _as_list(extract_json(response))
     scored: dict[str, dict[str, Any]] = {}
-    if isinstance(raw, list):
+    if raw is not None:
         for item in raw:
             if isinstance(item, dict) and item.get("id"):
                 scored[str(item["id"])] = item
@@ -513,12 +552,28 @@ def _load_run_results(run_set_directory: Path, scenario_id: str) -> list[tuple[P
     return results
 
 
+def _already_evaluated(trial_directory: Path, judge: JudgeClient | None) -> bool:
+    """True when the trial already carries an evaluation by this same judge."""
+    if judge is None:
+        return False
+    evaluation_path = trial_directory / "evaluation.json"
+    if not evaluation_path.is_file():
+        return False
+    try:
+        existing = json.loads(evaluation_path.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return bool(existing.get("judge_configuration") == dict(judge.identity))
+
+
 async def evaluate_run_set(
     run_set_directory: Path,
     config: EvaluationConfig | None = None,
     judge: JudgeClient | None = None,
     store: EvidenceStore | None = None,
     force_evidence_refresh: bool = False,
+    resume: bool = False,
+    scenario_concurrency: int = 1,
 ) -> dict[str, Any]:
     """Evaluate every trial in a run set; returns a summary dict."""
     scenario_directory = run_set_directory / "scenarios"
@@ -531,7 +586,13 @@ async def evaluate_run_set(
         if manifest_path.is_file():
             manifest = json.loads(manifest_path.read_text("utf-8"))
             raw_evaluation = dict(manifest.get("suite", {}).get("evaluation") or {})
-            known_judge_adapters = {"anthropic", "openai", "none"}
+            known_judge_adapters = {
+                "anthropic",
+                "openai",
+                "openrouter",
+                "openai_compatible",
+                "none",
+            }
             raw_judge = dict(raw_evaluation.get("judge") or {})
             if raw_judge.get("adapter") not in known_judge_adapters:
                 raw_judge = {}
@@ -540,7 +601,10 @@ async def evaluate_run_set(
     if judge is None:
         judge = create_judge(config.judge)
     if store is None:
-        store = EvidenceStore(run_set_directory / "evidence")
+        store = EvidenceStore(
+            run_set_directory / "evidence",
+            gateways=[g.model_dump() for g in config.evidence_gateways],
+        )
 
     summary: dict[str, Any] = {
         "evaluated": 0,
@@ -553,45 +617,71 @@ async def evaluate_run_set(
             "no judge configured; only deterministic and evidence checks were scored"
         )
 
-    for scenario_path in sorted(scenario_directory.glob("*.json")):
-        scenario = ScenarioInstance.model_validate_json(scenario_path.read_text("utf-8"))
-        trials = _load_run_results(run_set_directory, scenario.id)
-        if not trials:
-            continue
-        summary["scenarios"] += 1
+    summary["skipped"] = 0
+    semaphore = asyncio.Semaphore(max(1, scenario_concurrency))
 
-        cited_urls = sorted(
-            {
-                citation.url
-                for _directory, result in trials
-                for citation in result.citations
-            }
-        )
-        evidence: dict[str, tuple[EvidenceRecord, str]] = {}
-        if cited_urls:
-            await build_evidence_bundle(
-                store,
-                scenario.id,
-                cited_urls,
-                run_set_directory / "evidence" / "bundles",
-                force=force_evidence_refresh,
+    async def process_scenario(scenario_path: Path) -> None:
+        async with semaphore:
+            scenario = ScenarioInstance.model_validate_json(scenario_path.read_text("utf-8"))
+            trials = _load_run_results(run_set_directory, scenario.id)
+            if not trials:
+                return
+            summary["scenarios"] += 1
+            if resume:
+                remaining = [
+                    (directory, result)
+                    for directory, result in trials
+                    if not _already_evaluated(directory, judge)
+                ]
+                summary["skipped"] += len(trials) - len(remaining)
+                trials = remaining
+                if not trials:
+                    return
+
+            cited_urls = sorted(
+                {
+                    citation.url
+                    for _directory, result in trials
+                    for citation in result.citations
+                }
             )
-            for url in cited_urls:
-                evidence[url] = await store.get(url)
-
-        for trial_directory, result in trials:
-            trial_evidence = {
-                citation.url: evidence[citation.url]
-                for citation in result.citations
-                if citation.url in evidence
-            }
-            evaluation = await evaluate_run(scenario, result, trial_evidence, judge, config)
-            (trial_directory / "evaluation.json").write_bytes(
-                orjson.dumps(
-                    evaluation.model_dump(mode="json"),
-                    option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS,
+            evidence: dict[str, tuple[EvidenceRecord, str]] = {}
+            if cited_urls:
+                await build_evidence_bundle(
+                    store,
+                    scenario.id,
+                    cited_urls,
+                    run_set_directory / "evidence" / "bundles",
+                    force=force_evidence_refresh,
                 )
-                + b"\n"
-            )
-            summary["evaluated"] += 1
+                for url in cited_urls:
+                    evidence[url] = await store.get(url)
+
+            for trial_directory, result in trials:
+                trial_evidence = {
+                    citation.url: evidence[citation.url]
+                    for citation in result.citations
+                    if citation.url in evidence
+                }
+                try:
+                    evaluation = await evaluate_run(
+                        scenario, result, trial_evidence, judge, config
+                    )
+                except Exception as error:  # noqa: BLE001 — one trial must not sink the pass
+                    summary["warnings"].append(
+                        f"evaluation failed for {trial_directory}: {type(error).__name__}: {error}"
+                    )
+                    continue
+                (trial_directory / "evaluation.json").write_bytes(
+                    orjson.dumps(
+                        evaluation.model_dump(mode="json"),
+                        option=orjson.OPT_INDENT_2 | orjson.OPT_SORT_KEYS,
+                    )
+                    + b"\n"
+                )
+                summary["evaluated"] += 1
+
+    async with asyncio.TaskGroup() as task_group:
+        for scenario_path in sorted(scenario_directory.glob("*.json")):
+            task_group.create_task(process_scenario(scenario_path))
     return summary

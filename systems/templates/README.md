@@ -76,11 +76,14 @@ Cost and latency flow into the comparison and the quality/cost Pareto frontier
 from `metrics` — so "how much / how long" is answered as long as your system
 reports them.
 
-- `generic_http` fills `latency_ms` if you omit it and computes `cost_usd`
-  from `settings.cost.{input_per_mtok,output_per_mtok}` when you don't report
-  a cost yourself.
+- `generic_http` (and the native `openai`/`openai_compatible` adapters) fill
+  `latency_ms` if you omit it and compute `cost_usd` from
+  `settings.cost.{input_per_mtok,output_per_mtok}` — plus an optional
+  `settings.cost.search_per_1k` surcharge for web-search/grounding tool fees —
+  when you don't report a cost yourself.
 - **`command` fills `latency_ms` but does not compute cost** — a runner must
-  put `cost_usd` in `metrics` if you want cost reported.
+  put `cost_usd` in `metrics` if you want cost reported (e.g. the
+  `gemini_grounding.py` runner takes `--price-*` args and does this).
 - The `openrouter` gateway reports real `cost_usd` from its usage payload
   automatically.
 

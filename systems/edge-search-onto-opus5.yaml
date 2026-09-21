@@ -1,0 +1,26 @@
+# System 3 — a likely-best model on the same onto-enabled stack: Claude
+# Opus 5 via OpenRouter driving edge-search with ontology. Same runner and
+# manifold as system 2; only the model differs.
+schema_version: 1
+id: edge-search-onto-opus5
+name: Claude Opus 5 + edge-search with ontology
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - anthropic/claude-opus-5
+    - --manifold
+    - "13"
+environment:
+  api_key: OPENROUTER_API_KEY
