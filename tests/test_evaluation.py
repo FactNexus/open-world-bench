@@ -562,3 +562,25 @@ def test_support_prompt_shows_claim_relevant_passages_not_front_matter() -> None
     )
     assert "version: 1.0.0" not in prompt
     assert "| Adult | AUD 12.00 | 2025-07 |" in prompt
+
+
+def test_claim_citation_mapping_accepts_other_keys_and_infers_from_titles() -> None:
+    from owrb.evaluation import _infer_citation_ids, _listed_citation_ids
+
+    assert _listed_citation_ids({"citations": ["c1", "c2"]}) == ["c1", "c2"]
+    assert _listed_citation_ids({"citation": "[c3]"}) == ["c3"]
+    assert _listed_citation_ids({"sources": [{"id": "c4"}]}) == ["c4"]
+    assert _listed_citation_ids({"text": "no ids"}) == []
+
+    result = completed_result(
+        citations=[
+            Citation(id="c1", url="https://a.example/1", title="Mary Pool Rest Area"),
+            Citation(id="c2", url="https://a.example/2", title="Ngumban Cliff Rest Area"),
+            Citation(id="c3", url="https://a.example/3", title="Fitzroy River Lodge"),
+        ]
+    )
+    assert _infer_citation_ids("Mary Pool Rest Area is free and has toilets", result) == ["c1"]
+    assert _infer_citation_ids("Stay at Fitzroy River Lodge on night two", result) == ["c3"]
+    assert _infer_citation_ids("Carry 20 litres of water per person", result) == []
+    # generic words alone never match
+    assert _infer_citation_ids("A free rest area with toilets", result) == []

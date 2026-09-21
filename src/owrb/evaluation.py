@@ -151,7 +151,9 @@ def build_decompose_prompt(scenario: ScenarioInstance, result: RunResult) -> str
         "id (c1, c2, ...), text (the claim, self-contained), "
         "type (factual | operational | recommendation | other), "
         "time_sensitive (boolean), "
-        "citation_ids (array of citation ids placed near this claim, may be empty)."
+        "citation_ids (array of citation ids placed near this claim, may be empty). "
+        "Use the citation ids exactly as listed above (c1, c2, ...); a claim that sits in "
+        "a table row or paragraph carrying a citation marker takes that citation."
     )
 
 
@@ -275,20 +277,89 @@ async def _decompose_claims(
     for position, item in enumerate(raw[:_MAX_CLAIMS], start=1):
         if not isinstance(item, dict) or not item.get("text"):
             continue
+        cited = _listed_citation_ids(item)
+        citation_ids = [c for c in cited if c in valid_citation_ids]
+        if not citation_ids:
+            citation_ids = _infer_citation_ids(str(item["text"]), result)
         claims.append(
             {
                 "id": str(item.get("id") or f"c{position}"),
                 "text": str(item["text"]),
                 "type": item.get("type", "factual"),
                 "time_sensitive": bool(item.get("time_sensitive", False)),
-                "citation_ids": [
-                    str(citation_id)
-                    for citation_id in item.get("citation_ids", [])
-                    if str(citation_id) in valid_citation_ids
-                ],
+                "citation_ids": citation_ids,
             }
         )
     return claims
+
+
+_CITATION_KEYS = ("citation_ids", "citations", "citation", "cites", "sources", "source_ids")
+_CITATION_MARK = re.compile(r"\b(c\d+)\b")
+
+
+def _listed_citation_ids(item: dict[str, Any]) -> list[str]:
+    """Citation ids under whatever key the judge used, as a flat list of strings."""
+    for key in _CITATION_KEYS:
+        value = item.get(key)
+        if value is None:
+            continue
+        if isinstance(value, str):
+            return _CITATION_MARK.findall(value) or [value]
+        if isinstance(value, list):
+            out: list[str] = []
+            for entry in value:
+                if isinstance(entry, dict):
+                    entry = entry.get("id", "")
+                out.extend(_CITATION_MARK.findall(str(entry)) or [str(entry)])
+            return out
+    return []
+
+
+def _infer_citation_ids(claim_text: str, result: RunResult, limit: int = 3) -> list[str]:
+    """Attach citations whose title names the same place or thing as the claim.
+
+    Used only when the judge returned no citation ids for a claim: its citation
+    mapping is not deterministic, and a trial that draws a blank would otherwise
+    score zero on citation support through no fault of the answer. Conservative:
+    a citation qualifies when the claim contains its whole title, or shares at
+    least two significant title tokens covering half the title.
+    """
+    claim_tokens = _significant_tokens(claim_text)
+    lowered = claim_text.lower()
+    matches: list[tuple[float, str]] = []
+    for citation in result.citations:
+        title = (citation.title or "").strip()
+        if not title:
+            continue
+        title_tokens = _significant_tokens(title)
+        if not title_tokens:
+            continue
+        if title.lower() in lowered:
+            matches.append((2.0, citation.id))
+            continue
+        overlap = claim_tokens & title_tokens
+        share = len(overlap) / len(title_tokens)
+        if len(overlap) >= 2 and share >= 0.5:
+            matches.append((share, citation.id))
+    matches.sort(key=lambda pair: (-pair[0], pair[1]))
+    return [citation_id for _score, citation_id in matches[:limit]]
+
+
+_GENERIC_TITLE_TOKENS = frozenset(
+    [
+        "the", "a", "an", "and", "of", "in", "on", "at", "to", "for", "with", "by", "from",
+        "rest", "area", "park", "caravan", "camp", "campground", "national", "station",
+        "river", "road", "highway", "creek", "gorge", "free", "wikicamps", "site", "sites",
+    ]
+)
+
+
+def _significant_tokens(text: str) -> set[str]:
+    tokens = {
+        token.strip("'.-")
+        for token in re.findall(r"[a-z0-9][a-z0-9'.\-]*", text.lower())
+    }
+    return {t for t in tokens if len(t) >= 3 and t not in _GENERIC_TITLE_TOKENS}
 
 
 async def _judge_claim_support(
