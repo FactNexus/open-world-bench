@@ -203,7 +203,7 @@ def _as_list(raw: Any) -> list[Any] | None:
 
     Judges asked for "a JSON array" sometimes answer with an object wrapping it —
     Claude Opus 4.8 via OpenRouter returns ``{"claims": [...]}`` for the claim
-    decomposition, which left 248 trials of the first the partner corpus run unjudged.
+    decomposition, which left 248 trials of an early run unjudged.
     """
     if isinstance(raw, list):
         return raw

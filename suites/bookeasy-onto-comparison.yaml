@@ -9,8 +9,8 @@
 #
 # Before running:
 #   source ~/.owrb.env
-#   ssh -N -L 8096:127.0.0.1:8096 user@edge-host &   # edge-search tunnel
-#   (pause edge-index's crawl on the edge-search host for the duration — latency fairness)
+#   open an SSH tunnel from local port 8096 to edge-search on its host
+#   (pause edge-index's crawl on that host for the duration — latency fairness)
 schema_version: 1
 id: bookeasy-onto-comparison
 name: Bookeasy ontology comparison (control vs onto vs provider search)

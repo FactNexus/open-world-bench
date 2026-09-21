@@ -1,5 +1,5 @@
 # System 2 — current production model WITH the ontology: identical to the
-# control (same runner, model, manifold 13 on the edge-search host) except the
+# control (same runner, model, manifold 13) except the
 # ontological leg stays enabled.
 schema_version: 1
 id: edge-search-onto-gemini-flash

@@ -11,7 +11,7 @@ from varying only argv (model, manifold, --disable-ontology, --tags), never code
     stdout -> {"answer": ..., "citations": [...], "metrics": {...}, "trace": [...]}
 
 Environment: OPENROUTER_API_KEY, EDGE_SEARCH_URL (default
-http://127.0.0.1:8096 — the the edge-search host SSH tunnel), EDGE_SEARCH_API_KEY.
+http://127.0.0.1:8096 — an SSH tunnel to the edge-search host), EDGE_SEARCH_API_KEY.
 
 Smoke test:
     echo '{"prompt": "Suggest a rainy-day activity in Port Macquarie for a \
