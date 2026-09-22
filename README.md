@@ -165,6 +165,9 @@ schemas/                    generated/public JSON schemas
 domains/                    domain packs
 systems/                    example system adapter configurations
 suites/                     benchmark run configurations
+runners/                    command-adapter agents (edge-search tool-calling agent,
+                            Gemini grounding); runners/legacy/ keeps frozen earlier
+                            versions so a before/after can run in one suite
 docs/                       architecture and implementation guidance
 examples/                   generated scenario and run examples
 tests/                      contract and schema tests

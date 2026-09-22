@@ -1,0 +1,28 @@
+# CONTROL, runner 1.x (frozen copy in runners/legacy/): gemini-3-flash driving
+# edge-search without the ontology, citing by a URL list assembled at submit time.
+# Baseline arm for the 2026-09-23 runner comparison; same model, manifold and flags
+# as edge-search-control-gemini-flash, only the runner differs.
+schema_version: 1
+id: edge-search-control-v1-gemini-flash
+name: gemini-3-flash + edge-search (no ontology), runner 1.x — control baseline
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: false
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/legacy/edge_search_agent_v1.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --disable-ontology
+environment:
+  api_key: OPENROUTER_API_KEY

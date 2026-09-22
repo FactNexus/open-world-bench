@@ -1,0 +1,28 @@
+# CONTROL, runner 2.0: gemini-3-flash driving edge-search without the ontology, with
+# claim-level attribution (a source id after each claim), quoted citations checked
+# against the served text, and a read_url tool. Same model, manifold and flags as
+# edge-search-control-gemini-flash; only the runner differs.
+schema_version: 1
+id: edge-search-control-v2-gemini-flash
+name: gemini-3-flash + edge-search (no ontology), runner 2.0 — control
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: false
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --disable-ontology
+environment:
+  api_key: OPENROUTER_API_KEY
