@@ -188,7 +188,9 @@ TOOLS = [
 _PACK_HEADER = re.compile(r"^## \[(.*?)\]\((https?://[^)\s]+)\)\s*$", re.M)
 _UNAVAILABLE = "could not be retrieved"
 _FRONT_MATTER = re.compile(r"\A﻿?---[ \t]*\r?\n.*?\r?\n---[ \t]*\r?\n\s*", re.S)
-_MARKER = re.compile(r"\[(c\d+)\]")
+# A marker is [c3]; a claim with several sources may carry [c1, c4] or [c1; c4].
+_MARKER_GROUP = re.compile(r"\[(\s*c\d+\s*(?:[,;]\s*c\d+\s*)*)\]")
+_MARKER_ID = re.compile(r"c\d+")
 _MD_IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 _MD_LINK = re.compile(r"\[([^\]]*)\]\((?:https?://)[^)]*\)")
 _MIN_QUOTE_CHARS = 12
@@ -281,10 +283,12 @@ def annotate_pack(pack: str, registry: SourceRegistry) -> tuple[str, list[str]]:
 
 
 def markers_in(answer: str) -> list[str]:
+    """Source ids marked in the answer, in order of first appearance."""
     seen: list[str] = []
-    for source_id in _MARKER.findall(answer):
-        if source_id not in seen:
-            seen.append(source_id)
+    for group in _MARKER_GROUP.findall(answer):
+        for source_id in _MARKER_ID.findall(group):
+            if source_id not in seen:
+                seen.append(source_id)
     return seen
 
 

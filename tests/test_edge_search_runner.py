@@ -117,3 +117,13 @@ def test_markers_only_answer_gets_citations_without_quotes() -> None:
     )
     assert [c["id"] for c in built] == ["c1", "c2"]
     assert all("quote" not in c for c in built)
+
+
+def test_markers_accept_grouped_ids() -> None:
+    assert runner.markers_in("Open daily [c1, c4]. Free [c2]; closed Mondays [c4; c9] and [c2].") == [
+        "c1",
+        "c4",
+        "c2",
+        "c9",
+    ]
+    assert runner.markers_in("No markers here, only [unverified] and [see note].") == []
