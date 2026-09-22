@@ -38,7 +38,7 @@ def test_committed_instances_are_valid_unique_and_quota_matched() -> None:
     assert per_template == Counter(suite.scenario_generation.template_quotas)
     for instance in instances:
         assert "{{" not in instance.prompt
-        assert instance.domain_version == "0.3.0"
+        assert instance.domain_version == "0.3.1"
 
 
 def test_committed_instances_respect_template_rules() -> None:

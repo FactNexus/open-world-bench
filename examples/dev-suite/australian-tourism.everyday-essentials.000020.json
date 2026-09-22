@@ -9,11 +9,20 @@
   },
   "criteria": [
     {
-      "description": "Every named business or service must actually exist, and stated details — location, services offered, opening hours — must be supported by the cited evidence. A fabricated or defunct business, or invented opening hours, is a violation.\n",
+      "description": "A violation is a named business or service that the cited evidence shows does not exist, has closed, or does not offer the stated service or hours. Details that are merely unsupported are not a violation here; they are scored under verifiable-details.\n",
       "dimension": "factual_consistency",
       "hard": true,
+      "id": "no-fabrication",
+      "title": "No named service is fabricated, defunct or wrongly described",
+      "validator": null,
+      "weight": 1.0
+    },
+    {
+      "description": "Score by the share of named businesses or services whose stated details — existence, location, services offered, opening hours — are supported by the cited evidence: all supported scores 1.0, none 0.0. A service the answer explicitly marks as unverified counts as half.\n",
+      "dimension": "factual_consistency",
+      "hard": false,
       "id": "verifiable-details",
-      "title": "Named services exist and details are supported",
+      "title": "Named services and their details are supported",
       "validator": null,
       "weight": 2.0
     },
@@ -55,8 +64,8 @@
     }
   ],
   "domain_id": "australian-tourism",
-  "domain_version": "0.3.0",
-  "generated_at": "2026-07-20T04:57:47.662398Z",
+  "domain_version": "0.3.1",
+  "generated_at": "2026-09-22T11:28:42.318483Z",
   "id": "australian-tourism.everyday-essentials.000020",
   "parameters": {
     "location": {
@@ -103,5 +112,5 @@
     "practical"
   ],
   "template_id": "everyday-essentials",
-  "template_version": "0.1.0"
+  "template_version": "0.2.0"
 }

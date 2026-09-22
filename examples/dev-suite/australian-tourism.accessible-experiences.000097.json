@@ -55,8 +55,8 @@
     }
   ],
   "domain_id": "australian-tourism",
-  "domain_version": "0.3.0",
-  "generated_at": "2026-07-20T04:57:47.734527Z",
+  "domain_version": "0.3.1",
+  "generated_at": "2026-09-22T11:28:42.378173Z",
   "id": "australian-tourism.accessible-experiences.000097",
   "parameters": {
     "access_need": {

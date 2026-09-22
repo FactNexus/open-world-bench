@@ -46,8 +46,8 @@
     }
   ],
   "domain_id": "australian-tourism",
-  "domain_version": "0.3.0",
-  "generated_at": "2026-07-20T04:57:47.702580Z",
+  "domain_version": "0.3.1",
+  "generated_at": "2026-09-22T11:28:42.352633Z",
   "id": "australian-tourism.remote-area-plan.000063",
   "parameters": {
     "location": {

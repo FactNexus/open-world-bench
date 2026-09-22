@@ -1,7 +1,7 @@
 schema_version: 1
 id: everyday-essentials
 name: Everyday essentials while travelling
-version: 0.1.0
+version: 0.2.0  # 0.2.0 (2026-09-23): verifiable-details scored by the share of named services supported; hard gate only for a service shown to be fabricated, defunct or wrongly described
 description: >
   A traveller needs an ordinary local service — a pharmacy, groceries,
   medical care — that is not tourism content but that travellers depend on.
@@ -31,15 +31,24 @@ rules:
   # Child-specific needs only arise for a party travelling with children.
   - "not (need.requires_children == 1 and traveller.children == 0)"
 criteria:
+  - id: no-fabrication
+    dimension: factual_consistency
+    title: No named service is fabricated, defunct or wrongly described
+    description: >
+      A violation is a named business or service that the cited evidence
+      shows does not exist, has closed, or does not offer the stated service
+      or hours. Details that are merely unsupported are not a violation here;
+      they are scored under verifiable-details.
+    hard: true
+    weight: 1.0
   - id: verifiable-details
     dimension: factual_consistency
-    title: Named services exist and details are supported
+    title: Named services and their details are supported
     description: >
-      Every named business or service must actually exist, and stated
-      details — location, services offered, opening hours — must be
-      supported by the cited evidence. A fabricated or defunct business,
-      or invented opening hours, is a violation.
-    hard: true
+      Score by the share of named businesses or services whose stated
+      details — existence, location, services offered, opening hours — are
+      supported by the cited evidence: all supported scores 1.0, none 0.0.
+      A service the answer explicitly marks as unverified counts as half.
     weight: 2.0
   - id: practical-access
     dimension: constraint_satisfaction

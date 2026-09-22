@@ -46,8 +46,8 @@
     }
   ],
   "domain_id": "australian-tourism",
-  "domain_version": "0.3.0",
-  "generated_at": "2026-07-20T04:57:47.730501Z",
+  "domain_version": "0.3.1",
+  "generated_at": "2026-09-22T11:28:42.374820Z",
   "id": "australian-tourism.nearby-discovery.000092",
   "parameters": {
     "constraint": {

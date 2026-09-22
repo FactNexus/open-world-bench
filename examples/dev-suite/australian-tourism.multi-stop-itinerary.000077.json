@@ -46,8 +46,8 @@
     }
   ],
   "domain_id": "australian-tourism",
-  "domain_version": "0.3.0",
-  "generated_at": "2026-07-20T04:57:47.716135Z",
+  "domain_version": "0.3.1",
+  "generated_at": "2026-09-22T11:28:42.362681Z",
   "id": "australian-tourism.multi-stop-itinerary.000077",
   "parameters": {
     "interest": {
