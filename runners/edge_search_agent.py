@@ -820,6 +820,16 @@ def main() -> int:
             "unverified_marks": len(re.findall(r"\[unverified\]", answer)),
         }
     )
+    # The pages read, so breadth of consideration can be measured without replaying retrieval.
+    trace.append(
+        {
+            "action": "sources_read",
+            "pages": [
+                {"id": src["id"], "url": url, "title": src["title"]}
+                for url, src in es.registry.by_url.items()
+            ],
+        }
+    )
 
     print(
         json.dumps(
