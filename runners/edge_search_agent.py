@@ -411,6 +411,10 @@ class EdgeSearch:
         self.ok_calls = 0
         self.read_urls: list[str] = []
         self.seen_urls: set[str] = set()
+        # Every URL a search or read returned to the model, in first-seen order, and the
+        # URLs the latest call returned: the "surfaced" layer of breadth, logged per call.
+        self.surfaced: list[str] = []
+        self.last_urls: list[str] = []
         self.registry = SourceRegistry()
 
     def _scope(self) -> dict[str, Any]:
@@ -421,6 +425,12 @@ class EdgeSearch:
             **({"tags": self.tags} if self.tags else {}),
             **({"tag_mode": self.tag_mode} if self.tags and self.tag_mode else {}),
         }
+
+    def _surface(self, urls: list[str]) -> None:
+        self.last_urls = list(dict.fromkeys(urls))
+        for u in self.last_urls:
+            if u not in self.surfaced:
+                self.surfaced.append(u)
 
     def search(self, query: str, top_k: int = 8) -> str:
         self.searches += 1
@@ -436,6 +446,7 @@ class EdgeSearch:
             for x in data.get("results", [])
         ]
         self.seen_urls.update(x["url"] for x in results)
+        self._surface([x["url"] for x in results])
         out: dict[str, Any] = {
             "results": results,
             "note": "Read a page (read or read_url) before citing it; "
@@ -462,6 +473,7 @@ class EdgeSearch:
         if isinstance(content, (dict, list)):
             content = json.dumps(content)
         content = content[:MAX_TOOL_RESULT_CHARS]
+        self._surface(re.findall(r"\]\((https?://[^)\s]+)\)", content))
         for url in re.findall(r"\]\((https?://[^)\s]+)\)", content):
             self.seen_urls.add(url)
             if url not in self.read_urls:
@@ -750,7 +762,11 @@ def main() -> int:
                     result = json.dumps({"error": f"unknown tool {name}"})
             except httpx.HTTPError as e:
                 result = json.dumps({"error": f"tool failed: {e}"})
-            trace.append({"step": step, "action": name, "args": fn_args})
+            entry: dict[str, Any] = {"step": step, "action": name, "args": fn_args}
+            if name in ("search", "read") and es.last_urls:
+                entry["urls"] = es.last_urls
+            es.last_urls = []
+            trace.append(entry)
             messages.append(
                 {
                     "role": "tool",
@@ -820,6 +836,8 @@ def main() -> int:
             "unverified_marks": len(re.findall(r"\[unverified\]", answer)),
         }
     )
+    # Everything any search or read put in front of the model, first-seen order.
+    trace.append({"action": "surfaced", "count": len(es.surfaced), "urls": es.surfaced[:400]})
     # The pages read, so breadth of consideration can be measured without replaying retrieval.
     trace.append(
         {

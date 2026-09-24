@@ -48,6 +48,9 @@ class OpenAiAdapter:
             body["max_output_tokens"] = int(settings["max_tokens"])
         if settings.get("search_enabled", True):
             body["tools"] = [{"type": "web_search"}]
+            # Every source each search consulted, not only the ones the answer cites; the
+            # trace keeps them (in each web_search_call action) for breadth analysis.
+            body["include"] = ["web_search_call.action.sources"]
 
         base_url = str(settings.get("base_url", _DEFAULT_BASE_URL)).rstrip("/")
         started_at = utc_now()

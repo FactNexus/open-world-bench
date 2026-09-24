@@ -242,6 +242,7 @@ def test_openai_adapter_parses_responses_output(monkeypatch: pytest.MonkeyPatch)
     result = asyncio.run(adapter.run(request))
     assert captured["auth"] == "Bearer openai-secret"
     assert captured["body"]["tools"] == [{"type": "web_search"}]
+    assert captured["body"]["include"] == ["web_search_call.action.sources"]
     assert result.answer == "Red is a primary colour."
     assert result.citations[0].url == "https://example.com/primary"
     assert result.citations[0].answer_spans == ["Red"]
