@@ -229,3 +229,54 @@ def test_gateway_upstream_5xx_is_retried_then_succeeds(tmp_path: Path, monkeypat
 
 async def _no_sleep(_seconds: float) -> None:
     return None
+
+
+DIRECT = {
+    "match_prefix": "http://127.0.0.1:8096/v1/entity/",
+    "kind": "direct",
+    "api_key_env": "OWRB_TEST_GATEWAY_KEY",
+}
+
+
+def test_trusted_direct_prefix_is_fetched_with_the_key(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("OWRB_TEST_GATEWAY_KEY", "k-test")
+    seen: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["method"], seen["url"] = request.method, str(request.url)
+        seen["auth"] = request.headers.get("authorization")
+        return httpx.Response(
+            200,
+            text="# Terrace Pharmacy\n\n- Opening hours: Mon–Fri 08:30–17:00\n",
+            headers={"content-type": "text/markdown; charset=utf-8"},
+        )
+
+    store = EvidenceStore(
+        tmp_path / "evidence",
+        transport=httpx.MockTransport(handler),
+        resolver=resolve_public,
+        min_host_interval=0,
+        gateways=[DIRECT, GATEWAY],
+    )
+    record, text = asyncio.run(store.get("http://127.0.0.1:8096/v1/entity/1/10363417"))
+    assert record.status == "reachable" and record.title == "Terrace Pharmacy"
+    assert "08:30" in text and record.content_type == "text/markdown"
+    assert record.warning and "trusted prefix" in record.warning
+    assert seen == {
+        "method": "GET",
+        "url": "http://127.0.0.1:8096/v1/entity/1/10363417",
+        "auth": "Bearer k-test",
+    }
+    # Anything else on loopback is still refused.
+    other, _ = asyncio.run(store.get("http://127.0.0.1:8096/v1/admin/api-keys"))
+    assert other.status == "invalid"
+
+
+def test_gateway_entry_requires_an_endpoint_unless_direct() -> None:
+    import pytest
+
+    from owrb.evaluation import EvidenceGatewayConfig
+
+    assert EvidenceGatewayConfig(**DIRECT).kind == "direct"
+    with pytest.raises(ValueError):
+        EvidenceGatewayConfig(match_prefix="http://127.0.0.1:8001/", manifold_id=13)

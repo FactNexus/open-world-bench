@@ -46,7 +46,7 @@ OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 MAX_TOOL_RESULT_CHARS = 24_000
 READ_URL_MAX_TOKENS = 5000
 MAX_RESUBMITS = 2
-RUNNER_VERSION = "2.0"
+RUNNER_VERSION = "2.1"
 
 SYSTEM_PROMPT = """\
 You are a careful research assistant answering questions about Australian \
@@ -185,6 +185,48 @@ TOOLS = [
     },
 ]
 
+SERVICES_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "services_near",
+        "description": "Find everyday services near a place from the index's ontology: pharmacies, "
+        "GPs and medical centres, urgent care, hospitals, supermarkets, fuel, banks, ATMs, "
+        "dentists, "
+        "post offices, public toilets. Returns named services nearest first with distance and "
+        "direction from the place and opening hours where recorded. Each result is registered as a "
+        "readable source with its own source id, so it can be cited directly. Data comes from "
+        "OpenStreetMap and may be out of date; say so when you rely on it.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "type": "string",
+                    "description": "Kind of service, e.g. 'pharmacy', 'GP', 'urgent care', "
+                    "'supermarket', 'fuel', 'ATM'.",
+                },
+                "place": {
+                    "type": "string",
+                    "description": "Town, city or suburb, e.g. 'Katherine' or 'Mount Gambier, SA'.",
+                },
+                "radius_km": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Search radius in km (default 10).",
+                },
+            },
+            "required": ["category", "place"],
+        },
+    },
+}
+
+SERVICES_PROMPT = """
+- For practical needs such as a pharmacy, GP or urgent care, groceries, fuel, cash or a \
+post office, call `services_near` with the kind of service and the town. Tourism pages \
+rarely cover these. Its results are sources you can cite by id; state any opening hours \
+exactly as recorded and note that they should be confirmed.
+"""
+
 _PACK_HEADER = re.compile(r"^## \[(.*?)\]\((https?://[^)\s]+)\)\s*$", re.M)
 _UNAVAILABLE = "could not be retrieved"
 _FRONT_MATTER = re.compile(r"\A﻿?---[ \t]*\r?\n.*?\r?\n---[ \t]*\r?\n\s*", re.S)
@@ -272,7 +314,7 @@ def annotate_pack(pack: str, registry: SourceRegistry) -> tuple[str, list[str]]:
             out.append(block)
             continue
         title, url = match.group(1).strip(), match.group(2)
-        body = block[match.end():].strip()
+        body = block[match.end() :].strip()
         if not body or _UNAVAILABLE in body:
             out.append(f"## (unavailable, cannot be cited) [{title}]({url})\n\n" + body)
             continue
@@ -481,8 +523,72 @@ class EdgeSearch:
         annotated, _ids = annotate_pack(content, self.registry)
         return annotated
 
+    def services_near(self, category: str, place: str, radius_km: float = 10.0) -> str:
+        self.searches += 1
+        r = self.client.post(
+            "/v1/entities/near",
+            json={
+                "manifold_id": self.manifold_id,
+                "category": category,
+                "place": place,
+                "radius_km": max(1.0, min(float(radius_km or 10), 100.0)),
+                "limit": 10,
+                "include_pages": True,
+            },
+        )
+        if r.status_code in (400, 404):
+            return json.dumps(
+                {
+                    "error": (
+                        r.json()
+                        if r.headers.get("content-type", "").startswith("application/json")
+                        else r.text
+                    )
+                }
+            )
+        r.raise_for_status()
+        self.ok_calls += 1
+        data = r.json()
+        out = []
+        urls = []
+        for res in data.get("results", []):
+            url, page = res.get("url"), res.get("page")
+            if not url or not page:
+                continue
+            urls.append(url)
+            self.seen_urls.add(url)
+            if url not in self.read_urls:
+                self.read_urls.append(url)
+            sid = self.registry.register(url, res.get("name"), page)
+            out.append(
+                {
+                    "source_id": sid,
+                    "name": res.get("name"),
+                    "distance_km": res.get("distance_km"),
+                    "direction": res.get("direction"),
+                    "types": res.get("types"),
+                    "opening_hours": res.get("opening_hours") or "not recorded",
+                    "url": url,
+                }
+            )
+        self._surface(urls)
+        return json.dumps(
+            {
+                "place": (data.get("place") or {}).get("name"),
+                "radius_km": data.get("radius_km"),
+                "total_within_radius": data.get("total_within_radius"),
+                "results": out,
+                "note": "Each result is a source you can cite by its source_id. "
+                + (data.get("note") or ""),
+            }
+        )
+
     def read_url(self, url: str) -> str:
         url = (url or "").strip()
+        known = self.registry.by_url.get(url)
+        if known is not None and known.get("text"):
+            # Already registered (e.g. a services_near result): serve what the model was given.
+            return f"## [{known['id']}] [{known.get('title') or url}]({url})\n\n{known['text']}"
         if url not in self.seen_urls:
             return json.dumps({"error": "read_url accepts only a URL returned by search or read"})
         self.searches += 1
@@ -514,11 +620,17 @@ class EdgeSearch:
         return f"## [{source_id}] [{title}]({url})\n\n{content}"
 
 
-def chat(client: httpx.Client, model: str, messages: list[dict], force_submit: bool) -> dict:
+def chat(
+    client: httpx.Client,
+    model: str,
+    messages: list[dict],
+    force_submit: bool,
+    tools: list[dict] | None = None,
+) -> dict:
     body: dict[str, Any] = {
         "model": model,
         "messages": messages,
-        "tools": TOOLS,
+        "tools": tools if tools is not None else TOOLS,
         "usage": {"include": True},
         "temperature": 0,
     }
@@ -575,6 +687,12 @@ def main() -> int:
     ap.add_argument("--ontology-mode", choices=["off", "gated", "always"], default=None)
     ap.add_argument("--max-steps", type=int, default=12)
     ap.add_argument(
+        "--services",
+        action="store_true",
+        help="Give the model the services_near tool: ontology entities near a place "
+        "(edge-search /v1/entities/near).",
+    )
+    ap.add_argument(
         "--tags",
         default="",
         help="comma-separated tag names; restricts retrieval to pages carrying them",
@@ -602,11 +720,14 @@ def main() -> int:
         timeout=180.0,
     )
 
+    tools = TOOLS + [SERVICES_TOOL] if args.services else TOOLS
     messages: list[dict] = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": SYSTEM_PROMPT + (SERVICES_PROMPT if args.services else "")},
         {"role": "user", "content": prompt},
     ]
-    trace: list[dict] = [{"action": "runner", "version": RUNNER_VERSION}]
+    trace: list[dict] = [
+        {"action": "runner", "version": RUNNER_VERSION, "services": bool(args.services)}
+    ]
     metrics = {"input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0, "tool_calls": 0}
     answer: str | None = None
     citations: list[dict] = []
@@ -619,7 +740,7 @@ def main() -> int:
     for step in range(args.max_steps + MAX_RESUBMITS):
         force_submit = step >= args.max_steps - 1
         try:
-            response = chat(or_client, args.model, messages, force_submit)
+            response = chat(or_client, args.model, messages, force_submit, tools)
         except RuntimeError as e:
             # Gemini (via OpenRouter) can leave the conversation carrying a corrupted
             # "thought signature" after an aborted response, and every retry that
@@ -758,12 +879,18 @@ def main() -> int:
                     result = es.read(fn_args.get("query", ""), fn_args.get("top_k", 4))
                 elif name == "read_url":
                     result = es.read_url(fn_args.get("url", ""))
+                elif name == "services_near" and args.services:
+                    result = es.services_near(
+                        fn_args.get("category", ""),
+                        fn_args.get("place", ""),
+                        fn_args.get("radius_km", 10),
+                    )
                 else:
                     result = json.dumps({"error": f"unknown tool {name}"})
             except httpx.HTTPError as e:
                 result = json.dumps({"error": f"tool failed: {e}"})
             entry: dict[str, Any] = {"step": step, "action": name, "args": fn_args}
-            if name in ("search", "read") and es.last_urls:
+            if name in ("search", "read", "services_near") and es.last_urls:
                 entry["urls"] = es.last_urls
             es.last_urls = []
             trace.append(entry)
@@ -791,8 +918,7 @@ def main() -> int:
             )
         else:
             print(
-                "no edge-search retrieval performed; failing trial to avoid a "
-                "memory-only answer",
+                "no edge-search retrieval performed; failing trial to avoid a memory-only answer",
                 file=sys.stderr,
             )
         print("trace: " + json.dumps(trace)[:4000], file=sys.stderr)

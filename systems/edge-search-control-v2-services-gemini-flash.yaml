@@ -1,0 +1,32 @@
+# CONTROL, runner 2.1 with services: the runner 2.0 control plus the services_near tool,
+# which answers everyday-service needs (pharmacy, GP, supermarket, fuel, ATM ...) from the
+# manifold's ontology via edge-search POST /v1/entities/near. Each result is registered as
+# a citable source (an edge-search /v1/entity/... page). Search stays ontology-off; only the
+# extra tool differs from edge-search-control-v2-gemini-flash. For the evaluator to check
+# cited entity pages, the suite needs an evidence gateway entry with kind: direct for the
+# edge-search /v1/entity/ prefix.
+schema_version: 1
+id: edge-search-control-v2-services-gemini-flash
+name: gemini-3-flash + edge-search (no ontology), runner 2.1 with services tool — control
+adapter: command
+provider: internal
+strategy: private_index
+capabilities:
+  domain_index: true
+  ontology: true
+  citations: true
+  trace: true
+  token_metrics: true
+  cost_metrics: true
+settings:
+  command:
+    - python
+    - runners/edge_search_agent.py
+    - --model
+    - google/gemini-3-flash-preview
+    - --manifold
+    - "13"
+    - --disable-ontology
+    - --services
+environment:
+  api_key: OPENROUTER_API_KEY

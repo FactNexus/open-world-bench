@@ -19,10 +19,10 @@ import json
 import re
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import orjson
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from owrb.decisions import DecisionClient, DecisionJudgeConfig, create_decision_judge
 from owrb.evidence import EvidenceStore, build_evidence_bundle
@@ -83,15 +83,27 @@ class EvidenceGatewayConfig(BaseModel):
     """Fetch pages under ``match_prefix`` through an edge-search gateway endpoint
     (``POST /v1/gateway/fetch``) instead of directly. For candidate-owned pages
     the evaluator cannot reach itself, such as a loopback md-site behind a
-    private index. The evidence record carries the provenance (SPEC.md 15.5)."""
+    private index. The evidence record carries the provenance (SPEC.md 15.5).
+
+    ``kind: direct`` instead GETs the cited URL itself, with the configured key,
+    trusting the prefix as operator configuration: for citable pages a
+    candidate's own API serves (edge-search's ``/v1/entity/...`` pages), which
+    the address checks would otherwise refuse as loopback or private."""
 
     model_config = ConfigDict(extra="forbid")
 
     match_prefix: str
-    endpoint: str
-    manifold_id: int
+    kind: Literal["gateway", "direct"] = "gateway"
+    endpoint: str = ""
+    manifold_id: int = 0
     api_key_env: str = ""
     accept: str = "markdown"
+
+    @model_validator(mode="after")
+    def _endpoint_for_gateway(self) -> EvidenceGatewayConfig:
+        if self.kind == "gateway" and not self.endpoint:
+            raise ValueError("a gateway entry needs an endpoint (or kind: direct)")
+        return self
 
 
 class EvaluationConfig(BaseModel):

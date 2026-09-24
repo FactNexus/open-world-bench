@@ -123,3 +123,69 @@ def test_markers_accept_grouped_ids() -> None:
     text = "Open daily [c1, c4]. Free [c2]; closed Mondays [c4; c9] and [c2]."
     assert runner.markers_in(text) == ["c1", "c4", "c2", "c9"]
     assert runner.markers_in("No markers here, only [unverified] and [see note].") == []
+
+
+def _services_edge_search():
+    """An EdgeSearch whose HTTP client answers /v1/entities/near from a fixture."""
+    import json
+
+    import httpx
+
+    page = (
+        "# Terrace Pharmacy\n\nPharmacy, 1.9 km N of Katherine South.\n\n- Type: pharmacy\n"
+        "- Opening hours: Mon–Fri 08:30–17:00 (recorded as `Mo-Fr 08:30-17:00`)\n\n"
+        "Source: austourism ontology (epoch 1255). Place data from OpenStreetMap."
+    )
+    calls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request.url.path)
+        assert request.url.path == "/v1/entities/near"
+        body = json.loads(request.content)
+        assert body["include_pages"] is True and body["category"] == "pharmacy"
+        return httpx.Response(
+            200,
+            json={
+                "place": {"name": "Katherine"},
+                "radius_km": 10,
+                "total_within_radius": 1,
+                "results": [
+                    {
+                        "name": "Terrace Pharmacy",
+                        "url": "http://edge/v1/entity/1/10363417",
+                        "distance_km": 0.1,
+                        "direction": "SW",
+                        "types": ["pharmacy"],
+                        "opening_hours": "Mon–Fri 08:30–17:00",
+                        "page": page,
+                    }
+                ],
+                "note": "Confirm before relying on them.",
+            },
+        )
+
+    es = runner.EdgeSearch("http://edge", "k", 13, True, None, [], None)
+    es.client = httpx.Client(base_url="http://edge", transport=httpx.MockTransport(handler))
+    return es, calls
+
+
+def test_services_near_registers_citable_sources() -> None:
+    import json
+
+    es, calls = _services_edge_search()
+    out = json.loads(es.services_near("pharmacy", "Katherine"))
+    assert out["results"][0]["source_id"] == "c1"
+    assert out["results"][0]["opening_hours"] == "Mon–Fri 08:30–17:00"
+    url = "http://edge/v1/entity/1/10363417"
+    assert es.registry.by_url[url]["title"] == "Terrace Pharmacy"
+    assert es.surfaced == [url] and es.last_urls == [url]
+    # read_url on a registered entity serves the registered page: no gateway fetch.
+    text = es.read_url(url)
+    assert text.startswith("## [c1] [Terrace Pharmacy]") and calls == ["/v1/entities/near"]
+    # A quote from the page validates against the registered source.
+    citations, problems, _ = runner.validate_submission(
+        "Terrace Pharmacy opens weekdays [c1].",
+        [{"id": "c1", "quote": "Opening hours: Mon–Fri 08:30–17:00"}],
+        es.registry,
+    )
+    assert not problems and citations[0]["url"] == url

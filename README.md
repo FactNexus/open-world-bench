@@ -134,6 +134,19 @@ the most terms with the claim, rather than the first 1,200 characters of the pag
 The evidence-handling version is recorded in each evaluation's `judge_configuration`,
 so `--resume` re-judges trials evaluated under an older scheme.
 
+Pages a private index serves on loopback or a private address can be routed through
+`evaluation.evidence_gateways`: by default an entry POSTs the cited URL to an edge-search
+gateway endpoint (`kind: gateway`, needs `endpoint` and `manifold_id`); `kind: direct`
+instead GETs the cited URL itself with the entry's key, for citable pages served by the
+candidate's own API, such as edge-search's `/v1/entity/...` entity pages. Either way the
+prefix is operator configuration and every other loopback or private URL is still refused.
+
+The edge-search runner (`runners/edge_search_agent.py`, 2.1) takes `--services` to add a
+`services_near` tool that answers everyday-service needs (pharmacy, GP, supermarket, fuel,
+ATM ...) from the index's ontology via edge-search `POST /v1/entities/near`; each result is
+registered as a citable source. The runner's trace logs the URLs every search, read and
+services call returned, and a closing `surfaced` entry lists all of them.
+
 A **decision model** can take over the citation verdicts and the rubric scoring via
 `evaluation.decision_judge` (adapter `openrouter_decisions` or `typesafe`, model such
 as `typesafe/jev-1.13`): one typed call per cited claim (verdict as a choice with

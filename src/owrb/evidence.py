@@ -222,9 +222,82 @@ class EvidenceStore:
         )
         return record, text
 
+    async def _fetch_direct_trusted(
+        self, url: str, gateway: dict[str, Any]
+    ) -> tuple[EvidenceRecord, str]:
+        """GET a cited page under a trusted ``kind: direct`` prefix, with the
+        configured key. The prefix is operator configuration (a candidate's own
+        API serving citable pages), so the address checks are skipped as for a
+        gateway endpoint; redirects are not followed."""
+        import os
+
+        key_env = str(gateway.get("api_key_env", ""))
+        api_key = os.environ.get(key_env, "") if key_env else ""
+        if key_env and not api_key:
+            warning = f"direct-fetch key {key_env} is not set"
+            return _record(url, url, "blocked", warning=warning), ""
+        if urlsplit(url).scheme.lower() not in ("http", "https"):
+            return _record(url, url, "invalid", warning="unsupported scheme"), ""
+        note = f"direct fetch under trusted prefix {gateway.get('match_prefix')}"
+        last: tuple[EvidenceRecord, str] | None = None
+        for attempt in range(GATEWAY_ATTEMPTS):
+            if attempt:
+                await asyncio.sleep(2 ** attempt)
+            await self._politeness_delay(urlsplit(url).hostname or "")
+            async with self._httpx.AsyncClient(
+                transport=self.transport,
+                timeout=self.timeout_seconds,
+                follow_redirects=False,
+                headers={
+                    "user-agent": USER_AGENT,
+                    **({"authorization": f"Bearer {api_key}"} if api_key else {}),
+                },
+            ) as client:
+                try:
+                    response = await client.get(url)
+                except self._httpx.HTTPError as error:
+                    warning = f"fetch error: {error}; {note}"
+                    last = (_record(url, url, "missing", warning=warning), "")
+                    continue
+            if response.status_code in (401, 403):
+                return _record(url, url, "blocked", response.status_code, warning=note), ""
+            if response.status_code >= 500 or response.status_code == 429:
+                warning = f"{response.status_code}; {note}"
+                last = (_record(url, url, "missing", response.status_code, warning=warning), "")
+                continue
+            if response.status_code != 200:
+                return _record(url, url, "missing", response.status_code, warning=note), ""
+            body = response.content[:MAX_CONTENT_BYTES]
+            text = body.decode("utf-8", errors="replace").strip()
+            if not text:
+                warning = f"no extractable text; {note}"
+                return _record(url, url, "unextractable", 200, warning=warning), ""
+            headings = (line[2:].strip() for line in text.splitlines() if line.startswith("# "))
+            title = next(headings, None)
+            raw_type = str(response.headers.get("content-type") or "text/markdown")
+            content_type = raw_type.split(";")[0].strip()
+            return (
+                EvidenceRecord(
+                    url=url,
+                    final_url=None,
+                    status="reachable",
+                    http_status=200,
+                    content_type=content_type,
+                    content_hash=hashlib.sha256(body).hexdigest(),
+                    title=title,
+                    retrieved_at=datetime.now(tz=UTC),
+                    text_length=len(text),
+                    warning=note,
+                ),
+                text,
+            )
+        return last if last is not None else (_record(url, url, "missing", warning=note), "")
+
     async def _fetch(self, url: str) -> tuple[EvidenceRecord, str]:
         gateway = self._gateway_for(url)
         if gateway is not None:
+            if gateway.get("kind") == "direct":
+                return await self._fetch_direct_trusted(url, gateway)
             return await self._fetch_via_gateway(url, gateway)
         current_url = url
         async with self._httpx.AsyncClient(
